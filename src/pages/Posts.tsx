@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, MoreHorizontal, MessageSquare, Trash2 } from 'lucide-react'
+import { Plus, MoreHorizontal, MessageSquare, Trash2, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PostCommentsPanel } from '@/components/posts/PostCommentsPanel'
 import { useToast } from '@/hooks/use-toast'
@@ -14,12 +14,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getPosts, deletePost } from '@/services/api'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { getPosts, deletePost, updatePost } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
 
 export default function Posts() {
   const [posts, setPosts] = useState<any[]>([])
   const [selectedPost, setSelectedPost] = useState<any | null>(null)
+  const [editPost, setEditPost] = useState<any | null>(null)
+  const [editData, setEditData] = useState<any>({})
   const { toast } = useToast()
 
   const loadPosts = async () => {
@@ -37,8 +49,58 @@ export default function Posts() {
 
   useRealtime('posts', loadPosts)
 
+  const handleEditClick = (post: any) => {
+    console.log(
+      `[Bug Scanner] Action: Editar, PostID: ${post.id}, Timestamp: ${new Date().toISOString()}`,
+    )
+    setEditPost(post)
+    let dateStr = ''
+    if (post.agendado_para) {
+      const d = new Date(post.agendado_para)
+      if (!isNaN(d.getTime())) {
+        const localDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+        dateStr = localDate.toISOString().substring(0, 16)
+      }
+    }
+    setEditData({
+      titulo: post.titulo || '',
+      conteudo: post.conteudo || '',
+      agendado_para: dateStr,
+    })
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      const dataToSave = { ...editData }
+      if (dataToSave.agendado_para) {
+        const localDate = new Date(dataToSave.agendado_para)
+        dataToSave.agendado_para = localDate.toISOString()
+      } else {
+        dataToSave.agendado_para = null
+      }
+
+      await updatePost(editPost.id, dataToSave)
+      toast({ title: 'Sucesso', description: 'Post atualizado com sucesso!' })
+      setEditPost(null)
+      loadPosts()
+    } catch (err: any) {
+      console.error(
+        `[Bug Scanner] Error: Editar, PostID: ${editPost.id}, Timestamp: ${new Date().toISOString()}`,
+        err,
+      )
+      toast({
+        title: 'Erro',
+        description: 'Erro ao editar post. Tente novamente.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const handleDelete = async (post: any) => {
-    if (!window.confirm('Tem certeza que deseja deletar este post?')) return
+    console.log(
+      `[Bug Scanner] Action: Deletar, PostID: ${post.id}, Timestamp: ${new Date().toISOString()}`,
+    )
+    if (!window.confirm('Tem certeza?')) return
 
     try {
       await deletePost(post.id)
@@ -48,16 +110,15 @@ export default function Posts() {
       })
       setPosts(posts.filter((p) => p.id !== post.id))
     } catch (err: any) {
-      const msg = err.response?.message || err.message || 'Erro ao deletar post. Tente novamente.'
+      console.error(
+        `[Bug Scanner] Error: Deletar, PostID: ${post.id}, Timestamp: ${new Date().toISOString()}`,
+        err,
+      )
       toast({
         title: 'Erro',
-        description: msg,
+        description: 'Erro ao deletar post. Tente novamente.',
         variant: 'destructive',
       })
-
-      if (msg === 'Post não encontrado') {
-        loadPosts()
-      }
     }
   }
 
@@ -141,6 +202,14 @@ export default function Posts() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => handleEditClick(post)}
+                        title="Editar Post"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => handleDelete(post)}
                         title="Deletar Post"
@@ -170,6 +239,45 @@ export default function Posts() {
           onOpenChange={(val) => !val && setSelectedPost(null)}
         />
       )}
+
+      <Dialog open={!!editPost} onOpenChange={(val) => !val && setEditPost(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Post</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input
+                value={editData.titulo}
+                onChange={(e) => setEditData({ ...editData, titulo: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Conteúdo</Label>
+              <Textarea
+                value={editData.conteudo}
+                onChange={(e) => setEditData({ ...editData, conteudo: e.target.value })}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data Agendada</Label>
+              <Input
+                type="datetime-local"
+                value={editData.agendado_para}
+                onChange={(e) => setEditData({ ...editData, agendado_para: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPost(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

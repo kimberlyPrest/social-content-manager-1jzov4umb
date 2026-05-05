@@ -102,7 +102,23 @@ export const getPosts = async (limit = 10) => {
 }
 
 export const deletePost = async (id: string) => {
+  try {
+    const metrics = await pb
+      .collection('metrics_posts')
+      .getFullList({ filter: `post_id = "${id}"` })
+    await Promise.all(metrics.map((m) => pb.collection('metrics_posts').delete(m.id)))
+
+    const comments = await pb.collection('comentarios').getFullList({ filter: `post_id = "${id}"` })
+    await Promise.all(comments.map((c) => pb.collection('comentarios').delete(c.id)))
+  } catch (e) {
+    console.error('Error cleaning up related records', e)
+  }
+
   return pb.send(`/backend/v1/posts/${id}`, { method: 'DELETE' })
+}
+
+export const updatePost = async (id: string, data: any) => {
+  return pb.collection('posts').update(id, data)
 }
 
 export const createPost = async (data: any) => {
