@@ -50,6 +50,7 @@ export function PostCommentsPanel({ post, open, onOpenChange }: PostCommentsPane
     'posts',
     (e) => {
       if (e.action === 'update' && e.record.id === post?.id) {
+        // TODO: Handle post update if needed
       }
     },
     open,
