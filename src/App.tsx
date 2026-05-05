@@ -11,6 +11,7 @@ import Index from './pages/Index'
 import Posts from './pages/Posts'
 import CreatePost from './pages/CreatePost'
 import ABTests from './pages/ABTests'
+import Reports from './pages/Reports'
 import NotFound from './pages/NotFound'
 import { Navigate } from 'react-router-dom'
 
@@ -39,14 +40,7 @@ const App = () => (
                   </div>
                 }
               />
-              <Route
-                path="/reports"
-                element={
-                  <div className="p-8 text-center text-muted-foreground">
-                    Relatórios em breve...
-                  </div>
-                }
-              />
+              <Route path="/reports" element={<Reports />} />
               <Route
                 path="/team"
                 element={
