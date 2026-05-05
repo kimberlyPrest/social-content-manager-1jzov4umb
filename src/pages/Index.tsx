@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
-  Calendar,
-  CheckCircle2,
   Heart,
   Megaphone,
   Pencil,
@@ -9,6 +7,10 @@ import {
   Plus,
   FileText,
   RefreshCcw,
+  Loader2,
+  AlertCircle,
+  Eye,
+  MessageCircle,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +18,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -38,104 +48,97 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-
-const distData = [
-  { name: 'Facebook', value: 12, fill: '#1877F2' },
-  { name: 'Instagram', value: 18, fill: '#E4405F' },
-  { name: 'LinkedIn', value: 8, fill: '#0A66C2' },
-  { name: 'TikTok', value: 15, fill: '#000000' },
-]
-
-const perfData = [
-  { day: 'Seg', engajamento: 45 },
-  { day: 'Ter', engajamento: 52 },
-  { day: 'Qua', engajamento: 38 },
-  { day: 'Qui', engajamento: 61 },
-  { day: 'Sex', engajamento: 55 },
-  { day: 'Sab', engajamento: 48 },
-  { day: 'Dom', engajamento: 72 },
-]
-
-const initialPosts = [
-  {
-    id: 1,
-    title: 'Novo perfume Flor de Lótus',
-    network: 'Instagram',
-    status: 'Publicado',
-    date: '15/04/2026',
-  },
-  {
-    id: 2,
-    title: 'Promoção Black Friday',
-    network: 'Facebook',
-    status: 'Agendado',
-    date: '20/04/2026',
-  },
-  {
-    id: 3,
-    title: 'Dica de combinação de fragrâncias',
-    network: 'LinkedIn',
-    status: 'Publicado',
-    date: '14/04/2026',
-  },
-  {
-    id: 4,
-    title: 'Unboxing Supremo Aroma',
-    network: 'TikTok',
-    status: 'Rascunho',
-    date: '18/04/2026',
-  },
-  {
-    id: 5,
-    title: 'Entrevista com perfumista',
-    network: 'Instagram',
-    status: 'Publicado',
-    date: '13/04/2026',
-  },
-]
-
-const team = [
-  { name: 'Ana Silva', role: 'Admin', lastAccess: 'Hoje às 14:30', initials: 'AS' },
-  { name: 'Carlos Oliveira', role: 'Criador', lastAccess: 'Ontem às 10:15', initials: 'CO' },
-  { name: 'Mariana Santos', role: 'Analista', lastAccess: '2 dias atrás', initials: 'MS' },
-]
+import { getDashboardData, syncMetrics, deletePost } from '@/services/api'
+import { useRealtime } from '@/hooks/use-realtime'
 
 const statusColors: Record<string, string> = {
-  Rascunho: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent',
-  Agendado: 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent',
-  Publicado: 'bg-green-100 text-green-700 hover:bg-green-200 border-transparent',
-  Falhou: 'bg-red-100 text-red-700 hover:bg-red-200 border-transparent',
-}
-
-const roleColors: Record<string, string> = {
-  Admin: 'bg-purple-100 text-purple-700 border-transparent',
-  Criador: 'bg-blue-100 text-blue-700 border-transparent',
-  Analista: 'bg-orange-100 text-orange-700 border-transparent',
+  rascunho: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent',
+  agendado: 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent',
+  publicado: 'bg-green-100 text-green-700 hover:bg-green-200 border-transparent',
+  falhou: 'bg-red-100 text-red-700 hover:bg-red-200 border-transparent',
+  deletado: 'bg-gray-100 text-gray-500 border-transparent',
 }
 
 export default function Index() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [posts, setPosts] = useState(initialPosts)
+  const [syncing, setSyncing] = useState(false)
+  const [days, setDays] = useState('7')
+  const [data, setData] = useState<any>(null)
   const { toast } = useToast()
 
-  const loadData = () => {
-    setLoading(true)
-    setError(false)
-    setTimeout(() => {
-      // Simulate a successful fetch
+  const notifiedPosts = useRef(new Set<string>())
+
+  const loadData = async () => {
+    try {
+      const res = await getDashboardData(parseInt(days))
+      setData(res)
+      setError(false)
+    } catch (err) {
+      setError(true)
+    } finally {
       setLoading(false)
-      toast({ title: 'Sucesso', description: 'Dashboard atualizado com sucesso' })
-    }, 1500)
+    }
   }
 
   useEffect(() => {
+    setLoading(true)
     loadData()
-  }, [])
+  }, [days])
 
-  const handleDelete = (id: number) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id))
-    toast({ title: 'Post deletado', description: 'O post foi removido com sucesso.' })
+  useRealtime('metrics_posts', () => loadData())
+  useRealtime('posts', () => loadData())
+
+  useEffect(() => {
+    if (!data) return
+
+    data.metrics.forEach((m: any) => {
+      const post = m.expand?.post_id
+      if (!post) return
+
+      const key = post.id
+      if (m.curtidas >= 100 && !notifiedPosts.current.has(`${key}-high-perf`)) {
+        toast({
+          title: 'Post com excelente desempenho!',
+          description: `O post "${post.titulo}" atingiu ${m.curtidas} curtidas.`,
+        })
+        notifiedPosts.current.add(`${key}-high-perf`)
+      }
+      if (m.alcance > 1000 && !notifiedPosts.current.has(`${key}-reach`)) {
+        toast({
+          title: 'Alcance excelente!',
+          description: `O post "${post.titulo}" alcançou mais de 1000 pessoas.`,
+        })
+        notifiedPosts.current.add(`${key}-reach`)
+      }
+    })
+  }, [data, toast])
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deletePost(id)
+      toast({ title: 'Post deletado', description: 'O post foi removido com sucesso.' })
+      loadData()
+    } catch (err) {
+      toast({ title: 'Erro', description: 'Falha ao deletar post.', variant: 'destructive' })
+    }
+  }
+
+  const handleSync = async () => {
+    setSyncing(true)
+    try {
+      await syncMetrics()
+      toast({ title: 'Sucesso', description: 'Métricas atualizadas com sucesso!' })
+      await loadData()
+    } catch (err) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao atualizar métricas. Verifique as conexões.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncing(false)
+    }
   }
 
   if (error) {
@@ -149,46 +152,86 @@ export default function Index() {
     )
   }
 
+  const alerts =
+    data?.posts.filter((post: any) => {
+      if (post.status !== 'publicado') return false
+      const hoursSincePub =
+        (new Date().getTime() - new Date(post.publicado_em || post.created).getTime()) /
+        (1000 * 60 * 60)
+      const metric = data.metrics.find((m: any) => m.post_id === post.id)
+      return hoursSincePub >= 24 && (metric?.curtidas || 0) === 0
+    }) || []
+
+  const publishedCount = data?.posts.filter((p: any) => p.status === 'publicado').length || 0
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">Visão geral do desempenho e atividades.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">Visão geral do desempenho e atividades.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={days} onValueChange={setDays}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleSync} disabled={syncing}>
+            {syncing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="mr-2 h-4 w-4" />
+            )}
+            {syncing ? 'Atualizando...' : 'Atualizar métricas agora'}
+          </Button>
+        </div>
       </div>
+
+      {alerts.map((post: any) => (
+        <Alert variant="destructive" key={post.id}>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Post com baixo engajamento</AlertTitle>
+          <AlertDescription>
+            O post "{post.titulo}" foi publicado há mais de 24 horas e ainda não recebeu curtidas.
+          </AlertDescription>
+        </Alert>
+      ))}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            title: 'Total Agendados',
-            subtitle: 'Próximos 7 dias',
-            val: '12',
-            icon: Calendar,
-            color: 'text-blue-500',
-            bg: 'bg-blue-50',
-          },
-          {
-            title: 'Total Publicados',
-            subtitle: 'Este mês',
-            val: '45',
-            icon: CheckCircle2,
-            color: 'text-green-500',
-            bg: 'bg-green-50',
-          },
-          {
-            title: 'Engajamento Total',
-            subtitle: 'Últimos 7 dias',
-            val: '1.250',
+            title: 'Total de Curtidas',
+            val: data?.stats.curtidas || 0,
             icon: Heart,
             color: 'text-pink-500',
             bg: 'bg-pink-50',
           },
           {
+            title: 'Total de Comentários',
+            val: data?.stats.comentarios || 0,
+            icon: MessageCircle,
+            color: 'text-blue-500',
+            bg: 'bg-blue-50',
+          },
+          {
             title: 'Alcance Total',
-            subtitle: 'Últimos 7 dias',
-            val: '45.000',
+            val: data?.stats.alcance || 0,
             icon: Megaphone,
             color: 'text-purple-500',
             bg: 'bg-purple-50',
+          },
+          {
+            title: 'Impressões Totais',
+            val: data?.stats.impressoes || 0,
+            icon: Eye,
+            color: 'text-green-500',
+            bg: 'bg-green-50',
           },
         ].map((card, i) => (
           <Card key={i} className="border-none shadow-sm">
@@ -202,12 +245,7 @@ export default function Index() {
               {loading ? (
                 <Skeleton className="h-8 w-20 mb-1" />
               ) : (
-                <div className="text-2xl font-bold">{card.val}</div>
-              )}
-              {loading ? (
-                <Skeleton className="h-3 w-24" />
-              ) : (
-                <p className="text-xs text-muted-foreground">{card.subtitle}</p>
+                <div className="text-2xl font-bold">{card.val.toLocaleString()}</div>
               )}
             </CardContent>
           </Card>
@@ -222,10 +260,14 @@ export default function Index() {
           <CardContent>
             {loading ? (
               <Skeleton className="h-[250px] w-full" />
+            ) : !data?.distData || data.distData.length === 0 ? (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                Métricas não disponíveis
+              </div>
             ) : (
               <ChartContainer config={{}} className="h-[250px] w-full">
                 <BarChart
-                  data={distData}
+                  data={data.distData}
                   layout="vertical"
                   margin={{ top: 0, right: 20, bottom: 0, left: 0 }}
                 >
@@ -243,7 +285,7 @@ export default function Index() {
                     content={<ChartTooltipContent />}
                   />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
-                    {distData.map((entry, index) => (
+                    {data.distData.map((entry: any, index: number) => (
                       <Cell key={index} fill={entry.fill} />
                     ))}
                   </Bar>
@@ -252,19 +294,27 @@ export default function Index() {
             )}
           </CardContent>
         </Card>
+
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle>Desempenho de Engajamento (7 dias)</CardTitle>
+            <CardTitle>Evolução de Engajamento ({days} dias)</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <Skeleton className="h-[250px] w-full" />
+            ) : !data?.perfData || data.perfData.length === 0 ? (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                Métricas não disponíveis
+              </div>
             ) : (
               <ChartContainer
                 config={{ engajamento: { label: 'Engajamento', color: '#3b82f6' } }}
                 className="h-[250px] w-full"
               >
-                <LineChart data={perfData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <LineChart
+                  data={data.perfData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tickMargin={8} />
                   <YAxis axisLine={false} tickLine={false} tickMargin={8} />
@@ -303,7 +353,7 @@ export default function Index() {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : posts.length === 0 ? (
+            ) : data?.posts.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground mb-4">Nenhum post criado ainda</p>
@@ -311,26 +361,39 @@ export default function Index() {
                   <Link to="/posts/new">Criar primeiro post</Link>
                 </Button>
               </div>
+            ) : publishedCount === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground mb-4">Nenhum post publicado ainda</p>
+                <Button asChild>
+                  <Link to="/posts/new">Agendar Publicação</Link>
+                </Button>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="pl-6">Título</TableHead>
-                    <TableHead>Rede Social</TableHead>
+                    <TableHead>Criador</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right pr-6">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {posts.map((post) => (
+                  {data?.posts.slice(0, 5).map((post: any) => (
                     <TableRow key={post.id}>
-                      <TableCell className="pl-6 font-medium">{post.title}</TableCell>
-                      <TableCell>{post.network}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[post.status]}>{post.status}</Badge>
+                      <TableCell
+                        className="pl-6 font-medium max-w-[200px] truncate"
+                        title={post.titulo}
+                      >
+                        {post.titulo}
                       </TableCell>
-                      <TableCell>{post.date}</TableCell>
+                      <TableCell>{post.expand?.criador_id?.name || 'Desconhecido'}</TableCell>
+                      <TableCell>
+                        <Badge className={statusColors[post.status] || ''}>{post.status}</Badge>
+                      </TableCell>
+                      <TableCell>{new Date(post.created).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell className="text-right pr-6">
                         <Button variant="ghost" size="icon" asChild>
                           <Link to={`/posts/${post.id}/edit`}>
@@ -379,41 +442,21 @@ export default function Index() {
             <CardTitle>Equipe Ativa</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                </div>
-              ))
-            ) : (
-              <>
-                {team.map((member) => (
-                  <div key={member.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {member.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">{member.lastAccess}</p>
-                      </div>
-                    </div>
-                    <Badge className={roleColors[member.role]} variant="outline">
-                      {member.role}
-                    </Badge>
-                  </div>
-                ))}
-                <Button className="w-full mt-2" variant="outline" asChild>
-                  <Link to="/team">Gerenciar equipe</Link>
-                </Button>
-              </>
-            )}
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary">AD</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium">Admin</p>
+                <p className="text-xs text-muted-foreground">Logado agora</p>
+              </div>
+              <Badge className="ml-auto bg-purple-100 text-purple-700 hover:bg-purple-100 border-transparent">
+                Admin
+              </Badge>
+            </div>
+            <Button className="w-full mt-2" variant="outline" asChild>
+              <Link to="/team">Gerenciar equipe</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
