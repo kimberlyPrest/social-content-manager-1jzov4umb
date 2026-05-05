@@ -102,7 +102,7 @@ export const getPosts = async (limit = 10) => {
 }
 
 export const deletePost = async (id: string) => {
-  return pb.collection('posts').delete(id)
+  return pb.send(`/backend/v1/posts/${id}`, { method: 'DELETE' })
 }
 
 export const createPost = async (data: any) => {

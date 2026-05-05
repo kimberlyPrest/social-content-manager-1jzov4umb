@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, MoreHorizontal, MessageSquare } from 'lucide-react'
+import { Plus, MoreHorizontal, MessageSquare, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PostCommentsPanel } from '@/components/posts/PostCommentsPanel'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -13,12 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getPosts } from '@/services/api'
+import { getPosts, deletePost } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
 
 export default function Posts() {
   const [posts, setPosts] = useState<any[]>([])
   const [selectedPost, setSelectedPost] = useState<any | null>(null)
+  const { toast } = useToast()
 
   const loadPosts = async () => {
     try {
@@ -34,6 +36,30 @@ export default function Posts() {
   }, [])
 
   useRealtime('posts', loadPosts)
+
+  const handleDelete = async (post: any) => {
+    if (!window.confirm('Tem certeza que deseja deletar este post?')) return
+
+    try {
+      await deletePost(post.id)
+      toast({
+        title: 'Sucesso',
+        description: 'Post deletado com sucesso!',
+      })
+      setPosts(posts.filter((p) => p.id !== post.id))
+    } catch (err: any) {
+      const msg = err.response?.message || err.message || 'Erro ao deletar post. Tente novamente.'
+      toast({
+        title: 'Erro',
+        description: msg,
+        variant: 'destructive',
+      })
+
+      if (msg === 'Post não encontrado') {
+        loadPosts()
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -63,7 +89,7 @@ export default function Posts() {
                 <TableHead>Redes</TableHead>
                 <TableHead>Criador</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,14 +129,25 @@ export default function Posts() {
                   <TableCell>{post.expand?.criador_id?.name}</TableCell>
                   <TableCell>{new Date(post.created).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedPost(post)}
-                      title="Comentários e Aprovação"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedPost(post)}
+                        title="Comentários e Aprovação"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => handleDelete(post)}
+                        title="Deletar Post"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
