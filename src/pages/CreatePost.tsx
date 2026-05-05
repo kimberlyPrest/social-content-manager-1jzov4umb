@@ -189,11 +189,13 @@ export default function CreatePost() {
                                     <Checkbox
                                       checked={field.value?.includes(network.id)}
                                       onCheckedChange={(checked) => {
-                                        checked
-                                          ? field.onChange([...field.value, network.id])
-                                          : field.onChange(
-                                              field.value?.filter((v) => v !== network.id),
-                                            )
+                                        if (checked) {
+                                          field.onChange([...field.value, network.id])
+                                        } else {
+                                          field.onChange(
+                                            field.value?.filter((v) => v !== network.id),
+                                          )
+                                        }
                                       }}
                                     />
                                   </FormControl>
