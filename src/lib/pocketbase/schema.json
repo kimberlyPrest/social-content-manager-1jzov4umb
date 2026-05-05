@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-05-05T17:20:00.918Z",
+  "generatedAt": "2026-05-05T17:22:43.782Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
         "list": "id = @request.auth.id",
-        "view": "id = @request.auth.id",
+        "view": "empresa_id = @request.auth.empresa_id",
         "create": "",
         "update": "id = @request.auth.id",
         "delete": "id = @request.auth.id"
@@ -29,25 +29,431 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["admin", "criador", "analista"]
+        },
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
       ]
+    },
+    {
+      "name": "companies",
+      "type": "base",
+      "apiRules": {
+        "list": "id = @request.auth.empresa_id",
+        "view": "id = @request.auth.empresa_id",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "logo_url",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "posts",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "criador_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "conteudo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "imagens",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "videos",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "redes_sociais",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "agendado_para",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "publicado_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["rascunho", "agendado", "publicado", "falhou"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "metrics_posts",
+      "type": "base",
+      "apiRules": {
+        "list": "post_id.empresa_id = @request.auth.empresa_id",
+        "view": "post_id.empresa_id = @request.auth.empresa_id",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "post_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "posts"
+        },
+        {
+          "name": "rede_social",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "curtidas",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "comentarios",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "compartilhamentos",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "alcance",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "impressoes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cliques",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "ab_tests",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "post_id_a",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "posts"
+        },
+        {
+          "name": "post_id_b",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "posts"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["ativo", "finalizado"]
+        },
+        {
+          "name": "vencedor",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["a", "b", "empate"]
+        },
+        {
+          "name": "finalizado_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "monitoring",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["hashtag", "palavra_chave", "mencao", "concorrente"]
+        },
+        {
+          "name": "valor",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "rede_social",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "notifications",
+      "type": "base",
+      "apiRules": {
+        "list": "usuario_id = @request.auth.id",
+        "view": "usuario_id = @request.auth.id",
+        "create": null,
+        "update": "usuario_id = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["post_publicado", "comentario", "mencao", "teste_finalizado"]
+        },
+        {
+          "name": "mensagem",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "lida",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }
