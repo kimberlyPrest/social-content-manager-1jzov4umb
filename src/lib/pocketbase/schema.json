@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T21:32:25.722Z",
+  "generatedAt": "2026-05-05T22:30:23.834Z",
   "collections": [
     {
       "name": "users",
@@ -355,6 +355,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "metrica_principal",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "dias_duracao",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
@@ -734,6 +746,109 @@
           "name": "compartilhamentos",
           "type": "number",
           "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "recomendacoes",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "teste_ab_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "ab_tests"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["performance", "horario", "rede", "conteudo"]
+        },
+        {
+          "name": "mensagem",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "preferencias_usuario",
+      "type": "base",
+      "apiRules": {
+        "list": "usuario_id.empresa_id = @request.auth.empresa_id",
+        "view": "usuario_id.empresa_id = @request.auth.empresa_id",
+        "create": "usuario_id = @request.auth.id",
+        "update": "usuario_id = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["estilo_post", "horario_publicacao", "rede_preferida"]
+        },
+        {
+          "name": "valor",
+          "type": "text",
+          "required": true,
           "system": false
         },
         {

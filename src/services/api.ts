@@ -139,6 +139,28 @@ export const getABTests = async () => {
   })
 }
 
+export const createABTest = async (data: any) => {
+  return pb.collection('ab_tests').create(data)
+}
+
+export const updateABTest = async (id: string, data: any) => {
+  return pb.collection('ab_tests').update(id, data)
+}
+
+export const getRecommendations = async (testId: string) => {
+  return pb.collection('recomendacoes').getFullList({
+    filter: `teste_ab_id = "${testId}"`,
+    sort: '-created',
+  })
+}
+
+export const getPublishedPosts = async () => {
+  return pb.collection('posts').getFullList({
+    filter: `status = 'publicado'`,
+    sort: '-created',
+  })
+}
+
 export const getUnreadNotifications = async () => {
   return pb.collection('notifications').getFullList({
     filter: 'lida = false',
