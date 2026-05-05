@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T18:44:02.939Z",
+  "generatedAt": "2026-05-05T19:55:47.500Z",
   "collections": [
     {
       "name": "users",
@@ -454,6 +454,67 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "integracao_redes",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": "empresa_id = @request.auth.empresa_id"
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "rede_social",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["facebook", "instagram", "linkedin", "tiktok"]
+        },
+        {
+          "name": "access_token",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["conectado", "desconectado", "expirado"]
+        },
+        {
+          "name": "data_expiracao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_integracao_redes_empresa ON integracao_redes (empresa_id)"]
     }
   ]
 }
