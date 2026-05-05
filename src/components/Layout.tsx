@@ -6,6 +6,8 @@ import {
   Settings,
   SplitSquareHorizontal,
   Activity,
+  PieChart,
+  Users,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -23,8 +25,10 @@ import { Header } from './Header'
 const navItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { title: 'Posts', icon: FileText, path: '/posts' },
-  { title: 'Testes A/B', icon: SplitSquareHorizontal, path: '/ab-tests' },
   { title: 'Monitoramento', icon: Activity, path: '/monitor' },
+  { title: 'Relatórios', icon: PieChart, path: '/reports' },
+  { title: 'Testes A/B', icon: SplitSquareHorizontal, path: '/ab-tests' },
+  { title: 'Equipe', icon: Users, path: '/team' },
   { title: 'Configurações', icon: Settings, path: '/settings' },
 ]
 

@@ -37,6 +37,20 @@ const App = () => (
                 }
               />
               <Route
+                path="/reports"
+                element={
+                  <div className="p-8 text-center text-muted-foreground">
+                    Relatórios em breve...
+                  </div>
+                }
+              />
+              <Route
+                path="/team"
+                element={
+                  <div className="p-8 text-center text-muted-foreground">Equipe em breve...</div>
+                }
+              />
+              <Route
                 path="/settings"
                 element={
                   <div className="p-8 text-center text-muted-foreground">
