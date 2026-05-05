@@ -1,45 +1,79 @@
-import { useEffect, useState } from 'react'
-import { getMonitoredPosts, createOpportunity } from '@/services/monitor'
+import { useEffect, useState, useCallback } from 'react'
+import { getMonitoredPosts, createOpportunity, syncMonitoring } from '@/services/monitor'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 import { toast } from 'sonner'
-import { Heart, MessageCircle, Share2, Star, Radio } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Star, Radio, RefreshCw, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DMModal } from './DMModal'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export function MonitoringStream() {
   const { user } = useAuth()
   const [posts, setPosts] = useState<any[]>([])
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState(false)
+  const [redeFiltro, setRedeFiltro] = useState('todas')
+  const [monitoredValues, setMonitoredValues] = useState<string[]>([])
 
-  const load = async (p: number, append = false) => {
-    setError(false)
+  const load = useCallback(
+    async (p: number, append = false) => {
+      setError(false)
+      try {
+        const data = await getMonitoredPosts(p, 20, redeFiltro)
+        if (append) setPosts((prev) => [...prev, ...data.items])
+        else setPosts(data.items)
+        setHasMore(data.page < data.totalPages)
+      } catch {
+        setError(true)
+        toast.error('Erro ao carregar stream. Tente novamente.')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [redeFiltro],
+  )
+
+  const handleSync = useCallback(async () => {
+    setSyncing(true)
     try {
-      const data = await getMonitoredPosts(p)
-      if (append) setPosts((prev) => [...prev, ...data.items])
-      else setPosts(data.items)
-      setHasMore(data.page < data.totalPages)
-    } catch {
-      setError(true)
-      toast.error('Erro ao carregar stream. Tente novamente.')
+      const res = await syncMonitoring()
+      if (res.hasError) {
+        toast.error('Erro ao buscar posts. Tente novamente.')
+      }
+      if (res.rules) {
+        setMonitoredValues(res.rules)
+      }
+      await load(1)
+    } catch (err) {
+      toast.error('Erro ao buscar posts. Tente novamente.')
+      await load(1)
     } finally {
-      setLoading(false)
+      setSyncing(false)
     }
-  }
+  }, [load])
 
   useEffect(() => {
-    load(1)
-  }, [])
+    handleSync()
+  }, [handleSync])
 
   useRealtime('posts_monitorados', (e) => {
     if (e.action === 'create') {
-      setPosts((prev) => [e.record, ...prev])
+      if (redeFiltro === 'todas' || e.record.rede_social === redeFiltro) {
+        setPosts((prev) => [e.record, ...prev])
+      }
     }
   })
 
@@ -78,13 +112,46 @@ export function MonitoringStream() {
           <Radio className="h-5 w-5 text-primary animate-pulse" />
           Stream ao vivo
         </div>
+        <div className="flex items-center gap-2">
+          <Select
+            value={redeFiltro}
+            onValueChange={(val) => {
+              setRedeFiltro(val)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <Filter className="h-3.5 w-3.5 mr-2" />
+              <SelectValue placeholder="Todas as Redes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as Redes</SelectItem>
+              <SelectItem value="facebook">Facebook</SelectItem>
+              <SelectItem value="instagram">Instagram</SelectItem>
+              <SelectItem value="linkedin">LinkedIn</SelectItem>
+              <SelectItem value="tiktok">TikTok</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={handleSync}
+            disabled={syncing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Buscando...' : 'Sincronizar'}
+          </Button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading && posts.length === 0 ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-36 w-full" />)
         ) : posts.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground bg-card border rounded-xl">
-            Nenhum post encontrado. Adicione um monitoramento para começar.
+          <div className="text-center py-10 text-muted-foreground bg-card border rounded-xl px-6">
+            Nenhum post encontrado para{' '}
+            {monitoredValues.length > 0 ? monitoredValues.join(', ') : 'os termos atuais'}.
+            Sugerimos adicionar novos termos de monitoramento.
           </div>
         ) : (
           posts.map((post) => (

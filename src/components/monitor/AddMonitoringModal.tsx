@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { createMonitoringRule } from '@/services/monitor'
+import { createMonitoringRule, syncMonitoring } from '@/services/monitor'
 import { useAuth } from '@/hooks/use-auth'
 import { toast } from 'sonner'
 
@@ -51,6 +51,8 @@ export function AddMonitoringModal() {
       setTipo('')
       setValor('')
       setRedes([])
+
+      syncMonitoring().catch(() => {})
     } catch {
       toast.error('Erro ao adicionar')
     }

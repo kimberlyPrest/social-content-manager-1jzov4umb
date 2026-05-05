@@ -16,8 +16,16 @@ export const deleteMonitoringRule = async (id: string) => {
   return await pb.collection('monitoring').delete(id)
 }
 
-export const getMonitoredPosts = async (page = 1, perPage = 20) => {
-  return await pb.collection('posts_monitorados').getList(page, perPage, { sort: '-created' })
+export const getMonitoredPosts = async (page = 1, perPage = 20, redeFiltro?: string) => {
+  const options: any = { sort: '-created' }
+  if (redeFiltro && redeFiltro !== 'todas') {
+    options.filter = `rede_social = '${redeFiltro}'`
+  }
+  return await pb.collection('posts_monitorados').getList(page, perPage, options)
+}
+
+export const syncMonitoring = async () => {
+  return await pb.send('/backend/v1/monitor/sync', { method: 'POST' })
 }
 
 export const getOpportunities = async () => {
