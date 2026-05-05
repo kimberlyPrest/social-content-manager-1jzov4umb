@@ -106,12 +106,50 @@ export const deletePost = async (id: string) => {
 }
 
 export const createPost = async (data: any) => {
-  data.status = data.status || 'rascunho'
-  return pb.collection('posts').create(data)
+  if (data.agendamento_tipo === 'agora') {
+    data.status = 'agendado'
+    data.agendado_para = new Date().toISOString()
+  } else if (data.agendamento_tipo === 'depois') {
+    data.status = 'agendado'
+  } else if (!data.status) {
+    data.status = 'rascunho'
+  }
+
+  const record = await pb.collection('posts').create(data)
+
+  if (data.agendamento_tipo === 'agora') {
+    for (let i = 0; i < 15; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      try {
+        const updated = await pb.collection('posts').getOne(record.id)
+        if (updated.status === 'publicado') {
+          return updated
+        }
+        if (updated.status === 'falhou') {
+          throw new Error('Falha ao publicar. Verifique os campos ou a conexão com as redes.')
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('Falha ao publicar')) {
+          throw err
+        }
+      }
+    }
+  }
+
+  return record
 }
 
 export const createPostWithFiles = async (data: any, files: File[]) => {
   const formData = new FormData()
+
+  if (data.agendamento_tipo === 'agora') {
+    data.status = 'agendado'
+    data.agendado_para = new Date().toISOString()
+  } else if (data.agendamento_tipo === 'depois') {
+    data.status = 'agendado'
+  } else if (!data.status) {
+    data.status = 'rascunho'
+  }
 
   for (const key in data) {
     if (data[key] !== undefined && data[key] !== null) {
@@ -129,7 +167,31 @@ export const createPostWithFiles = async (data: any, files: File[]) => {
     formData.append('imagens', file)
   })
 
-  return pb.collection('posts').create(formData)
+  const record = await pb.collection('posts').create(formData)
+
+  if (data.agendamento_tipo === 'agora') {
+    for (let i = 0; i < 15; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      try {
+        const updated = await pb.collection('posts').getOne(record.id)
+        if (updated.status === 'publicado') {
+          return updated
+        }
+        if (updated.status === 'falhou') {
+          throw new Error('Falha ao publicar. Verifique os campos ou a conexão com as redes.')
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('Falha ao publicar')) {
+          throw err
+        }
+      }
+    }
+    throw new Error(
+      'O tempo limite para publicação expirou, mas o processo continua em segundo plano.',
+    )
+  }
+
+  return record
 }
 
 export const getABTests = async () => {
