@@ -27,6 +27,28 @@ export const createPost = async (data: any) => {
   return pb.collection('posts').create(data)
 }
 
+export const createPostWithFiles = async (data: any, files: File[]) => {
+  const formData = new FormData()
+
+  for (const key in data) {
+    if (data[key] !== undefined && data[key] !== null) {
+      if (key === 'redes_sociais') {
+        formData.append(key, JSON.stringify(data[key]))
+      } else if (data[key] instanceof Date) {
+        formData.append(key, data[key].toISOString())
+      } else {
+        formData.append(key, String(data[key]))
+      }
+    }
+  }
+
+  files.forEach((file) => {
+    formData.append('imagens', file)
+  })
+
+  return pb.collection('posts').create(formData)
+}
+
 export const getABTests = async () => {
   return pb.collection('ab_tests').getFullList({
     expand: 'post_id_a,post_id_b',

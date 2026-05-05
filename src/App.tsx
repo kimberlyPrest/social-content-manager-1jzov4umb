@@ -29,6 +29,7 @@ const App = () => (
               <Route path="/dashboard" element={<Index />} />
               <Route path="/posts" element={<Posts />} />
               <Route path="/posts/new" element={<CreatePost />} />
+              <Route path="/posts/:id/edit" element={<CreatePost />} />
               <Route path="/ab-tests" element={<ABTests />} />
               <Route
                 path="/monitor"
