@@ -12,6 +12,7 @@ import Posts from './pages/Posts'
 import CreatePost from './pages/CreatePost'
 import ABTests from './pages/ABTests'
 import NotFound from './pages/NotFound'
+import { Navigate } from 'react-router-dom'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -24,7 +25,8 @@ const App = () => (
 
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Index />} />
               <Route path="/posts" element={<Posts />} />
               <Route path="/posts/new" element={<CreatePost />} />
               <Route path="/ab-tests" element={<ABTests />} />

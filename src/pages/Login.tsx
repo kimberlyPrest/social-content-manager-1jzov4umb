@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/hooks/use-auth'
 import { toast } from 'sonner'
 import { BarChart2, Loader2 } from 'lucide-react'
+import pb from '@/lib/pocketbase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -38,10 +39,11 @@ export default function Login() {
     const { error } = await signIn(values.email, values.password)
 
     if (error) {
-      setErrorMsg('E-mail ou senha inválidos. Verifique suas credenciais.')
+      setErrorMsg('Email ou senha incorretos')
     } else {
-      toast.success('Bem-vindo!')
-      navigate('/')
+      const userName = pb.authStore.record?.name || ''
+      toast.success(`Bem-vindo, ${userName}!`)
+      navigate('/dashboard')
     }
   }
 
