@@ -8,6 +8,7 @@ import {
   Activity,
   PieChart,
   Users,
+  Clock,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -28,6 +29,7 @@ const navItems = [
   { title: 'Monitoramento', icon: Activity, path: '/monitor' },
   { title: 'Relatórios', icon: PieChart, path: '/reports' },
   { title: 'Testes A/B', icon: SplitSquareHorizontal, path: '/ab-tests' },
+  { title: 'Atividades', icon: Clock, path: '/activity' },
   { title: 'Equipe', icon: Users, path: '/team' },
   { title: 'Configurações', icon: Settings, path: '/settings' },
 ]

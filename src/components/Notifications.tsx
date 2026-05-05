@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { getUnreadNotifications, markNotificationRead } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
 import { RecordModel } from 'pocketbase'
+import { toast } from 'sonner'
 
 export function Notifications() {
   const [notifications, setNotifications] = useState<RecordModel[]>([])
@@ -23,9 +25,14 @@ export function Notifications() {
     loadNotifications()
   }, [])
 
-  useRealtime('notifications', () => {
+  useRealtime('notifications', (e) => {
+    if (e.action === 'create' && e.record.lida === false) {
+      toast.info('Nova notificação', { description: e.record.mensagem })
+    }
     loadNotifications()
   })
+
+  const navigate = useNavigate()
 
   const handleMarkRead = async (id: string) => {
     await markNotificationRead(id)
@@ -53,11 +60,17 @@ export function Notifications() {
               Você não tem novas notificações
             </div>
           ) : (
-            notifications.map((n) => (
+            notifications.slice(0, 5).map((n) => (
               <div
                 key={n.id}
                 className="flex flex-col gap-1 p-4 border-b hover:bg-muted/50 cursor-pointer"
-                onClick={() => handleMarkRead(n.id)}
+                onClick={() => {
+                  handleMarkRead(n.id)
+                  setOpen(false)
+                  if (n.referencia_id) {
+                    navigate('/posts')
+                  }
+                }}
               >
                 <span className="text-sm">{n.mensagem}</span>
                 <span className="text-xs text-muted-foreground">
@@ -66,6 +79,16 @@ export function Notifications() {
               </div>
             ))
           )}
+        </div>
+        <div className="p-2 border-t text-center">
+          <Button
+            variant="ghost"
+            className="w-full text-sm h-8"
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/notifications">Ver todas</Link>
+          </Button>
         </div>
       </PopoverContent>
     </Popover>

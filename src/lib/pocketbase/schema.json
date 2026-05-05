@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T22:30:23.834Z",
+  "generatedAt": "2026-05-05T22:41:11.048Z",
   "collections": [
     {
       "name": "users",
@@ -203,6 +203,13 @@
           "type": "text",
           "required": false,
           "system": false
+        },
+        {
+          "name": "status_aprovacao",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["nenhum", "aguardando_aprovacao", "aprovado", "rejeitado"]
         }
       ],
       "indexes": []
@@ -454,7 +461,15 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["post_publicado", "comentario", "mencao", "teste_finalizado"]
+          "selectValues": [
+            "post_publicado",
+            "comentario",
+            "mencao",
+            "teste_finalizado",
+            "post_agendado",
+            "post_aprovado",
+            "membro_adicionado"
+          ]
         },
         {
           "name": "mensagem",
@@ -481,6 +496,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "referencia_id",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
@@ -849,6 +870,128 @@
           "name": "valor",
           "type": "text",
           "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "comentarios",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && post_id.empresa_id = @request.auth.empresa_id",
+        "view": "@request.auth.id != '' && post_id.empresa_id = @request.auth.empresa_id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && (usuario_id = @request.auth.id || @request.auth.role = 'admin')"
+      },
+      "fields": [
+        {
+          "name": "post_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "posts"
+        },
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "conteudo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "atividades",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && empresa_id = @request.auth.empresa_id",
+        "view": "@request.auth.id != '' && empresa_id = @request.auth.empresa_id",
+        "create": "@request.auth.id != ''",
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "post_criado",
+            "post_editado",
+            "comentario_adicionado",
+            "post_agendado",
+            "post_publicado",
+            "teste_criado",
+            "teste_finalizado",
+            "membro_adicionado",
+            "membro_removido",
+            "aprovacao_solicitada",
+            "post_aprovado",
+            "post_rejeitado"
+          ]
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "referencia_id",
+          "type": "text",
+          "required": false,
           "system": false
         },
         {

@@ -1,0 +1,39 @@
+migrate(
+  (app) => {
+    const col = new Collection({
+      name: 'comentarios',
+      type: 'base',
+      listRule: "@request.auth.id != '' && post_id.empresa_id = @request.auth.empresa_id",
+      viewRule: "@request.auth.id != '' && post_id.empresa_id = @request.auth.empresa_id",
+      createRule: "@request.auth.id != ''",
+      updateRule: "@request.auth.id != '' && usuario_id = @request.auth.id",
+      deleteRule:
+        "@request.auth.id != '' && (usuario_id = @request.auth.id || @request.auth.role = 'admin')",
+      fields: [
+        {
+          name: 'post_id',
+          type: 'relation',
+          required: true,
+          collectionId: app.findCollectionByNameOrId('posts').id,
+          cascadeDelete: true,
+          maxSelect: 1,
+        },
+        {
+          name: 'usuario_id',
+          type: 'relation',
+          required: true,
+          collectionId: '_pb_users_auth_',
+          cascadeDelete: true,
+          maxSelect: 1,
+        },
+        { name: 'conteudo', type: 'text', required: true },
+        { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
+        { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
+      ],
+    })
+    app.save(col)
+  },
+  (app) => {
+    app.delete(app.findCollectionByNameOrId('comentarios'))
+  },
+)

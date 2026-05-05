@@ -13,6 +13,8 @@ import CreatePost from './pages/CreatePost'
 import ABTests from './pages/ABTests'
 import Reports from './pages/Reports'
 import Monitor from './pages/Monitor'
+import NotificationsPage from './pages/Notifications'
+import ActivityPage from './pages/Activity'
 import NotFound from './pages/NotFound'
 import { Navigate } from 'react-router-dom'
 
@@ -35,6 +37,8 @@ const App = () => (
               <Route path="/ab-tests" element={<ABTests />} />
               <Route path="/monitor" element={<Monitor />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/activity" element={<ActivityPage />} />
               <Route
                 path="/team"
                 element={

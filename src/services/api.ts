@@ -171,3 +171,56 @@ export const getUnreadNotifications = async () => {
 export const markNotificationRead = async (id: string) => {
   return pb.collection('notifications').update(id, { lida: true })
 }
+
+export const getComments = async (postId: string) => {
+  return pb.collection('comentarios').getFullList({
+    filter: `post_id = "${postId}"`,
+    expand: 'usuario_id',
+    sort: 'created',
+  })
+}
+
+export const createComment = async (data: any) => {
+  return pb.collection('comentarios').create(data)
+}
+
+export const deleteComment = async (id: string) => {
+  return pb.collection('comentarios').delete(id)
+}
+
+export const getActivities = async (filterStr = '') => {
+  return pb.collection('atividades').getFullList({
+    filter: filterStr,
+    expand: 'usuario_id',
+    sort: '-created',
+  })
+}
+
+export const updatePostApproval = async (id: string, status: string) => {
+  return pb.collection('posts').update(id, { status_aprovacao: status })
+}
+
+export const getAllNotifications = async (filterStr = '') => {
+  return pb.collection('notifications').getFullList({
+    filter: filterStr,
+    expand: 'usuario_id',
+    sort: '-created',
+  })
+}
+
+export const markAllNotificationsRead = async () => {
+  const unread = await getUnreadNotifications()
+  await Promise.all(unread.map((n) => markNotificationRead(n.id)))
+}
+
+export const deleteNotification = async (id: string) => {
+  return pb.collection('notifications').delete(id)
+}
+
+export const getCompanyUsers = async () => {
+  const user = pb.authStore.record
+  if (!user) return []
+  return pb.collection('users').getFullList({
+    filter: `empresa_id = "${user.empresa_id}"`,
+  })
+}
