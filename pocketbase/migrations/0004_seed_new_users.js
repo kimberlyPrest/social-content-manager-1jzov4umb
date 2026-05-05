@@ -1,13 +1,27 @@
 migrate(
   (app) => {
     // Complete cleanup of old user/company data to prevent conflicts
-    app.db().newQuery('DELETE FROM notifications').execute()
-    app.db().newQuery('DELETE FROM monitoring').execute()
-    app.db().newQuery('DELETE FROM ab_tests').execute()
-    app.db().newQuery('DELETE FROM metrics_posts').execute()
-    app.db().newQuery('DELETE FROM posts').execute()
-    app.db().newQuery('DELETE FROM _pb_users_auth_').execute()
-    app.db().newQuery('DELETE FROM companies').execute()
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('notifications'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('monitoring'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('ab_tests'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('metrics_posts'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('posts'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('_pb_users_auth_'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('companies'))
+    } catch (_) {}
 
     const companies = app.findCollectionByNameOrId('companies')
     const users = app.findCollectionByNameOrId('_pb_users_auth_')
@@ -37,7 +51,11 @@ migrate(
     }
   },
   (app) => {
-    app.db().newQuery('DELETE FROM _pb_users_auth_').execute()
-    app.db().newQuery('DELETE FROM companies').execute()
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('_pb_users_auth_'))
+    } catch (_) {}
+    try {
+      app.truncateCollection(app.findCollectionByNameOrId('companies'))
+    } catch (_) {}
   },
 )
