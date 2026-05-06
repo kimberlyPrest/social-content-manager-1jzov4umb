@@ -9,6 +9,7 @@ import {
   PieChart,
   Users,
   PenTool,
+  Workflow,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -66,6 +67,13 @@ const navItems = [
     path: '/ab-tests',
     colorClass: 'text-[#F97316]',
     bgActive: 'data-[active=true]:bg-[#F97316]/10',
+  },
+  {
+    title: 'Automações',
+    icon: Workflow,
+    path: '/automations',
+    colorClass: 'text-[#06B6D4]',
+    bgActive: 'data-[active=true]:bg-[#06B6D4]/10',
   },
   {
     title: 'Equipe',
