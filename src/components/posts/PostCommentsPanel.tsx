@@ -14,8 +14,15 @@ import { Badge } from '@/components/ui/badge'
 import { getComments, createComment, deleteComment, updatePostApproval } from '@/services/api'
 import { useAuth } from '@/hooks/use-auth'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Trash2, Send } from 'lucide-react'
+import { Trash2, Send, Zap } from 'lucide-react'
 import { toast } from 'sonner'
+import { getMensagensProntas, MensagemPronta } from '@/services/mensagens-prontas'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 
 interface PostCommentsPanelProps {
   post: any
@@ -28,6 +35,7 @@ export function PostCommentsPanel({ post, open, onOpenChange }: PostCommentsPane
   const [comments, setComments] = useState<any[]>([])
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(false)
+  const [mensagensProntas, setMensagensProntas] = useState<MensagemPronta[]>([])
 
   const loadComments = async () => {
     if (!post?.id) return
@@ -42,8 +50,18 @@ export function PostCommentsPanel({ post, open, onOpenChange }: PostCommentsPane
   useEffect(() => {
     if (open) {
       loadComments()
+      loadMensagensProntas()
     }
   }, [open, post?.id])
+
+  const loadMensagensProntas = async () => {
+    try {
+      const msgs = await getMensagensProntas()
+      setMensagensProntas(msgs)
+    } catch (err) {
+      console.error('Erro ao carregar mensagens prontas', err)
+    }
+  }
 
   useRealtime('comentarios', loadComments, open)
   useRealtime(
@@ -214,18 +232,51 @@ export function PostCommentsPanel({ post, open, onOpenChange }: PostCommentsPane
 
         <div className="p-4 border-t bg-background">
           <div className="flex gap-2">
-            <Textarea
-              placeholder="Adicione um comentário..."
-              className="min-h-[80px] resize-none"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSendComment()
-                }
-              }}
-            />
+            <div className="relative flex-1">
+              <Textarea
+                placeholder="Adicione um comentário... (/ para atalho de resposta rápida)"
+                className="min-h-[80px] resize-none pr-10"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSendComment()
+                  }
+                }}
+              />
+              <div className="absolute top-2 right-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    >
+                      <Zap className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[200px]">
+                    {mensagensProntas.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Nenhuma mensagem encontrada
+                      </div>
+                    ) : (
+                      mensagensProntas.map((msg) => (
+                        <DropdownMenuItem
+                          key={msg.id}
+                          onClick={() => {
+                            setNewComment((prev) => (prev ? `${prev} ${msg.texto}` : msg.texto))
+                          }}
+                        >
+                          {msg.texto}
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
             <Button
               className="h-auto shrink-0"
               disabled={!newComment.trim() || loading}

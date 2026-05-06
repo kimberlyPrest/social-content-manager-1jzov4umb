@@ -16,6 +16,7 @@ import Monitor from './pages/Monitor'
 import NotificationsPage from './pages/Notifications'
 import ActivityPage from './pages/Activity'
 import NotFound from './pages/NotFound'
+import SettingsPage from './pages/Settings'
 import { Navigate } from 'react-router-dom'
 
 const App = () => (
@@ -45,14 +46,7 @@ const App = () => (
                   <div className="p-8 text-center text-muted-foreground">Equipe em breve...</div>
                 }
               />
-              <Route
-                path="/settings"
-                element={
-                  <div className="p-8 text-center text-muted-foreground">
-                    Configurações em breve...
-                  </div>
-                }
-              />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
 
