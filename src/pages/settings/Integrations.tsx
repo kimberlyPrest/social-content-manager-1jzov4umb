@@ -94,7 +94,7 @@ export default function Integrations() {
       expDate.setDate(expDate.getDate() + 60)
       const payload = {
         status: 'conectado' as const,
-        access_token: 'instagram_api_key_valid',
+        access_token: '',
         data_expiracao: expDate.toISOString(),
       }
 
@@ -185,7 +185,7 @@ export default function Integrations() {
 
       const payload = {
         status: 'conectado' as const,
-        access_token: `connected_token_${selectedRede.id}_${Date.now()}`,
+        access_token: '',
         data_expiracao: expDate.toISOString(),
       }
 

@@ -80,10 +80,10 @@ onRecordAfterCreateSuccess((e) => {
     let tokenSecretKey = ''
 
     if (!token) {
-      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
+      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_API_KEY'
       else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_API_KEY'
-      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
-      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
+      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_API_KEY'
+      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_API_KEY'
 
       token = $secrets.get(tokenSecretKey)
 
@@ -562,10 +562,10 @@ onRecordAfterUpdateSuccess((e) => {
     let tokenSecretKey = ''
 
     if (!token) {
-      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
+      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_API_KEY'
       else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_API_KEY'
-      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
-      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
+      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_API_KEY'
+      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_API_KEY'
 
       token = $secrets.get(tokenSecretKey)
 
