@@ -6,6 +6,7 @@ import Notifications from './settings/Notifications'
 import PresetMessages from './settings/PresetMessages'
 import Integrations from './settings/Integrations'
 import Security from './settings/Security'
+import BackupExport from './settings/BackupExport'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -59,6 +60,14 @@ export default function SettingsPage() {
               Integrações
             </TabsTrigger>
           )}
+          {canEditGlobal && (
+            <TabsTrigger
+              value="backup"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200"
+            >
+              Backup e Exportação
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="seguranca"
             className="data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200"
@@ -91,6 +100,11 @@ export default function SettingsPage() {
           {isMaster && (
             <TabsContent value="integracoes" className="mt-0">
               <Integrations />
+            </TabsContent>
+          )}
+          {canEditGlobal && (
+            <TabsContent value="backup" className="mt-0">
+              <BackupExport />
             </TabsContent>
           )}
           <TabsContent value="seguranca" className="mt-0">
