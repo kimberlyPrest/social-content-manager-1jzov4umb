@@ -13,6 +13,7 @@ onRecordAfterCreateSuccess((e) => {
   }
 
   $app.logger().info(`[PUBLISH_START] Initiation of the publication process`, 'post_id', post.id)
+  console.log('Iniciando publicação do post:', post.id)
 
   let allSuccess = true
   let anyAttempted = false
@@ -58,9 +59,9 @@ onRecordAfterCreateSuccess((e) => {
       .info(`[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`, 'post_id', post.id)
 
     let token = integracao ? integracao.getString('access_token') : ''
+    let tokenSecretKey = ''
 
     if (!token) {
-      let tokenSecretKey = ''
       if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
       else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
       else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
@@ -86,6 +87,7 @@ onRecordAfterCreateSuccess((e) => {
     $app
       .logger()
       .info(`[TOKEN_SUCCESS] Successfully retrieved token for ${rede}`, 'post_id', post.id)
+    console.log('Token lido:', integracao ? `integracao_${rede}` : tokenSecretKey)
 
     let url = ''
     let body = {}
@@ -146,6 +148,7 @@ onRecordAfterCreateSuccess((e) => {
         'payload',
         JSON.stringify(body),
       )
+    console.log('Chamando API:', url, 'com dados:', body)
 
     try {
       const res = $http.send({
@@ -167,6 +170,7 @@ onRecordAfterCreateSuccess((e) => {
           'body',
           JSON.stringify(res.json || {}),
         )
+      console.log('Resposta da API:', res.json || {})
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         // success
@@ -220,6 +224,7 @@ onRecordAfterCreateSuccess((e) => {
           'error',
           err.message,
         )
+      console.error('Erro ao publicar:', err.message, err)
       allSuccess = false
     }
   }
@@ -262,6 +267,7 @@ onRecordAfterUpdateSuccess((e) => {
   }
 
   $app.logger().info(`[PUBLISH_START] Initiation of the publication process`, 'post_id', post.id)
+  console.log('Iniciando publicação do post:', post.id)
 
   let allSuccess = true
   let anyAttempted = false
@@ -307,9 +313,9 @@ onRecordAfterUpdateSuccess((e) => {
       .info(`[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`, 'post_id', post.id)
 
     let token = integracao ? integracao.getString('access_token') : ''
+    let tokenSecretKey = ''
 
     if (!token) {
-      let tokenSecretKey = ''
       if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
       else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
       else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
@@ -335,6 +341,7 @@ onRecordAfterUpdateSuccess((e) => {
     $app
       .logger()
       .info(`[TOKEN_SUCCESS] Successfully retrieved token for ${rede}`, 'post_id', post.id)
+    console.log('Token lido:', integracao ? `integracao_${rede}` : tokenSecretKey)
 
     let url = ''
     let body = {}
@@ -395,6 +402,7 @@ onRecordAfterUpdateSuccess((e) => {
         'payload',
         JSON.stringify(body),
       )
+    console.log('Chamando API:', url, 'com dados:', body)
 
     try {
       const res = $http.send({
@@ -416,6 +424,7 @@ onRecordAfterUpdateSuccess((e) => {
           'body',
           JSON.stringify(res.json || {}),
         )
+      console.log('Resposta da API:', res.json || {})
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         // success
@@ -469,6 +478,7 @@ onRecordAfterUpdateSuccess((e) => {
           'error',
           err.message,
         )
+      console.error('Erro ao publicar:', err.message, err)
       allSuccess = false
     }
   }
