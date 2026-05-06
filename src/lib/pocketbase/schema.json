@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T00:48:10.474Z",
+  "generatedAt": "2026-05-06T00:52:20.572Z",
   "collections": [
     {
       "name": "users",
@@ -69,6 +69,12 @@
           "type": "text",
           "required": false,
           "system": false
+        },
+        {
+          "name": "two_factor_enabled",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -112,6 +118,24 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "email_contato",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "telefone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "endereco",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
@@ -876,7 +900,17 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["estilo_post", "horario_publicacao", "rede_preferida"]
+          "selectValues": [
+            "estilo_post",
+            "horario_publicacao",
+            "rede_preferida",
+            "publicar_automaticamente",
+            "notificar_publicacao",
+            "notificacao_email",
+            "notificacao_push",
+            "frequencia_resumo",
+            "alerta_baixo_engajamento"
+          ]
         },
         {
           "name": "valor",
