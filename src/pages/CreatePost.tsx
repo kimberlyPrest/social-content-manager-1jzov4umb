@@ -158,8 +158,14 @@ export default function CreatePost() {
       }
 
       let status = 'rascunho'
+      let agendado_para = null
+
       if (submitAction === 'publish') {
-        status = values.agendar === 'later' ? 'agendado' : 'publicado'
+        status = 'agendado'
+        agendado_para =
+          values.agendar === 'later'
+            ? new Date(values.agendado_para!).toISOString()
+            : new Date().toISOString()
       }
 
       const payload = {
@@ -169,22 +175,29 @@ export default function CreatePost() {
         status,
         criador_id: user.id,
         empresa_id: user.empresa_id,
-        agendado_para:
-          values.agendar === 'later' ? new Date(values.agendado_para!).toISOString() : null,
+        agendado_para,
+        agendamento_tipo: values.agendar === 'now' ? 'agora' : 'depois',
       }
 
       if (isEditMode && id) {
         const response = await updatePostWithFiles(id, payload, files)
         console.log(`[Bug Scanner] API Response (Update):`, response)
-        toast.success('Post atualizado com sucesso!')
-        navigate('/')
+
+        if (values.agendar === 'now' && submitAction === 'publish') {
+          toast.success('Post publicado com sucesso!')
+        } else if (submitAction === 'publish') {
+          toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
+        } else {
+          toast.success('Post atualizado e salvo como rascunho!')
+        }
+        setTimeout(() => navigate('/posts'), 2000)
       } else {
         await createPostWithFiles(payload, files)
         if (status === 'rascunho') toast.success('Post salvo como rascunho!')
-        else if (status === 'agendado')
+        else if (values.agendar === 'later')
           toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
         else toast.success('Post publicado com sucesso!')
-        setTimeout(() => navigate('/dashboard'), 2000)
+        setTimeout(() => navigate('/posts'), 2000)
       }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao salvar post. Tente novamente.')

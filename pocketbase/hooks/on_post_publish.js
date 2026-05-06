@@ -49,39 +49,38 @@ onRecordAfterCreateSuccess((e) => {
       )
     } catch (err) {
       $app.logger().warn(`Integration not found or not connected for ${rede}`, 'post_id', post.id)
-      allSuccess = false
-      continue
     }
 
     anyAttempted = true
-    let tokenSecretKey = ''
-    if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
-    else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
-    else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
-    else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
     $app
       .logger()
-      .info(
-        `[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`,
-        'post_id',
-        post.id,
-        'secret',
-        tokenSecretKey,
-      )
-    const token = $secrets.get(tokenSecretKey)
+      .info(`[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`, 'post_id', post.id)
+
+    let token = integracao ? integracao.getString('access_token') : ''
+
     if (!token) {
-      $app
-        .logger()
-        .error(
-          `[TOKEN_ERROR] Secret ${tokenSecretKey} is missing`,
-          'post_id',
-          post.id,
-          'rede',
-          rede,
-        )
-      allSuccess = false
-      continue
+      let tokenSecretKey = ''
+      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
+      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
+      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
+      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
+
+      token = $secrets.get(tokenSecretKey)
+
+      if (!token) {
+        $app
+          .logger()
+          .error(
+            `[TOKEN_ERROR] Token not found in integracao_redes and Secret ${tokenSecretKey} is missing`,
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
+        allSuccess = false
+        continue
+      }
     }
 
     $app
@@ -181,6 +180,10 @@ onRecordAfterCreateSuccess((e) => {
             'rede',
             rede,
           )
+        if (integracao) {
+          integracao.set('status', 'expirado')
+          $app.saveNoValidate(integracao)
+        }
         allSuccess = false
       } else if (res.statusCode === 400) {
         $app
@@ -224,6 +227,18 @@ onRecordAfterCreateSuccess((e) => {
   if (anyAttempted && allSuccess) {
     post.set('status', 'publicado')
     post.set('publicado_em', new Date().toISOString().replace('T', ' '))
+    try {
+      const atividades = $app.findCollectionByNameOrId('atividades')
+      const record = new Record(atividades)
+      record.set('empresa_id', post.getString('empresa_id'))
+      record.set('usuario_id', post.getString('criador_id'))
+      record.set('tipo', 'post_publicado')
+      record.set('descricao', 'O post foi publicado com sucesso pelas redes sociais conectadas.')
+      record.set('referencia_id', post.id)
+      $app.saveNoValidate(record)
+    } catch (err) {
+      $app.logger().warn('Failed to create atividade', 'error', err.message)
+    }
   } else {
     post.set('status', 'falhou')
   }
@@ -283,39 +298,38 @@ onRecordAfterUpdateSuccess((e) => {
       )
     } catch (err) {
       $app.logger().warn(`Integration not found or not connected for ${rede}`, 'post_id', post.id)
-      allSuccess = false
-      continue
     }
 
     anyAttempted = true
-    let tokenSecretKey = ''
-    if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
-    else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
-    else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
-    else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
     $app
       .logger()
-      .info(
-        `[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`,
-        'post_id',
-        post.id,
-        'secret',
-        tokenSecretKey,
-      )
-    const token = $secrets.get(tokenSecretKey)
+      .info(`[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`, 'post_id', post.id)
+
+    let token = integracao ? integracao.getString('access_token') : ''
+
     if (!token) {
-      $app
-        .logger()
-        .error(
-          `[TOKEN_ERROR] Secret ${tokenSecretKey} is missing`,
-          'post_id',
-          post.id,
-          'rede',
-          rede,
-        )
-      allSuccess = false
-      continue
+      let tokenSecretKey = ''
+      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
+      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
+      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
+      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
+
+      token = $secrets.get(tokenSecretKey)
+
+      if (!token) {
+        $app
+          .logger()
+          .error(
+            `[TOKEN_ERROR] Token not found in integracao_redes and Secret ${tokenSecretKey} is missing`,
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
+        allSuccess = false
+        continue
+      }
     }
 
     $app
@@ -415,6 +429,10 @@ onRecordAfterUpdateSuccess((e) => {
             'rede',
             rede,
           )
+        if (integracao) {
+          integracao.set('status', 'expirado')
+          $app.saveNoValidate(integracao)
+        }
         allSuccess = false
       } else if (res.statusCode === 400) {
         $app
@@ -458,6 +476,18 @@ onRecordAfterUpdateSuccess((e) => {
   if (anyAttempted && allSuccess) {
     post.set('status', 'publicado')
     post.set('publicado_em', new Date().toISOString().replace('T', ' '))
+    try {
+      const atividades = $app.findCollectionByNameOrId('atividades')
+      const record = new Record(atividades)
+      record.set('empresa_id', post.getString('empresa_id'))
+      record.set('usuario_id', post.getString('criador_id'))
+      record.set('tipo', 'post_publicado')
+      record.set('descricao', 'O post foi publicado com sucesso pelas redes sociais conectadas.')
+      record.set('referencia_id', post.id)
+      $app.saveNoValidate(record)
+    } catch (err) {
+      $app.logger().warn('Failed to create atividade', 'error', err.message)
+    }
   } else {
     post.set('status', 'falhou')
   }

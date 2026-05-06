@@ -150,7 +150,28 @@ export const updatePostWithFiles = async (id: string, data: any, files: File[]) 
     formData.append('imagens', file)
   })
 
-  return pb.collection('posts').update(id, formData)
+  const record = await pb.collection('posts').update(id, formData)
+
+  if (data.agendamento_tipo === 'agora') {
+    for (let i = 0; i < 15; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      try {
+        const updated = await pb.collection('posts').getOne(id)
+        if (updated.status === 'publicado') {
+          return updated
+        }
+        if (updated.status === 'falhou') {
+          throw new Error('Falha ao publicar. Verifique os campos ou a conexão com as redes.')
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('Falha ao publicar')) {
+          throw err
+        }
+      }
+    }
+  }
+
+  return record
 }
 
 export const createPost = async (data: any) => {

@@ -19,7 +19,9 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
   $app.logger().info(`Encontrados ${posts.length} posts agendados para publicar`)
 
   for (const post of posts) {
-    $app.logger().info(`Publicação iniciada para o post ${post.id}`, 'post_id', post.id)
+    $app
+      .logger()
+      .info(`[PUBLISH_START] Publicação iniciada para o post ${post.id}`, 'post_id', post.id)
 
     let allSuccess = true
     let anyAttempted = false
@@ -57,31 +59,35 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         )
       } catch (err) {
         $app.logger().warn(`Integration not found or not connected for ${rede}`, 'post_id', post.id)
-        allSuccess = false
-        continue
       }
 
       anyAttempted = true
-      let tokenSecretKey = ''
-      if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
-      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
-      else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
-      else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
+      $app.logger().info(`[TOKEN_RETRIEVAL] Lendo token para ${rede}`, 'post_id', post.id)
 
-      $app.logger().info(`Lendo token para ${rede}`, 'post_id', post.id, 'secret', tokenSecretKey)
-      const token = $secrets.get(tokenSecretKey)
+      let token = integracao ? integracao.getString('access_token') : ''
+
       if (!token) {
-        $app
-          .logger()
-          .error(
-            `[TOKEN_ERROR] Secret ${tokenSecretKey} is missing`,
-            'post_id',
-            post.id,
-            'rede',
-            rede,
-          )
-        allSuccess = false
-        continue
+        let tokenSecretKey = ''
+        if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
+        else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
+        else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
+        else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
+
+        token = $secrets.get(tokenSecretKey)
+
+        if (!token) {
+          $app
+            .logger()
+            .error(
+              `[TOKEN_ERROR] Token not found in integracao_redes and Secret ${tokenSecretKey} is missing`,
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+          continue
+        }
       }
 
       let url = ''
@@ -132,7 +138,17 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         body = { post_info: { title: titulo, description: conteudo } }
       }
 
-      $app.logger().info(`Chamando API da ${rede}`, 'post_id', post.id, 'endpoint', url)
+      $app
+        .logger()
+        .info(
+          `[API_REQUEST] Chamando API da ${rede}`,
+          'post_id',
+          post.id,
+          'endpoint',
+          url,
+          'payload',
+          JSON.stringify(body),
+        )
 
       try {
         const res = $http.send({
@@ -146,7 +162,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         $app
           .logger()
           .info(
-            `Resposta da API ${rede}: ${res.statusCode} - ${JSON.stringify(res.json || {})}`,
+            `[API_RESPONSE] Resposta da API ${rede}: ${res.statusCode} - ${JSON.stringify(res.json || {})}`,
             'post_id',
             post.id,
           )
@@ -163,6 +179,10 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
               'rede',
               rede,
             )
+          if (integracao) {
+            integracao.set('status', 'expirado')
+            $app.saveNoValidate(integracao)
+          }
           allSuccess = false
         } else if (res.statusCode === 400) {
           $app
@@ -215,7 +235,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         record.set('empresa_id', post.getString('empresa_id'))
         record.set('usuario_id', post.getString('criador_id'))
         record.set('tipo', 'post_publicado')
-        record.set('descricao', 'O post foi publicado com sucesso através do agendamento.')
+        record.set('descricao', 'O post foi publicado com sucesso através do agendamento cron.')
         record.set('referencia_id', post.id)
         $app.saveNoValidate(record)
       } catch (err) {
