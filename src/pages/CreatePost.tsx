@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-import { createPostWithFiles, getPost, updatePostWithFiles } from '@/services/api'
+import { createPostWithFiles, getPost, updatePostWithFiles, publicarPost } from '@/services/api'
 import pb from '@/lib/pocketbase/client'
 import { SocialPreviews } from '@/components/SocialPreviews'
 import { cn } from '@/lib/utils'
@@ -37,8 +37,8 @@ const NETWORKS = [
 const formSchema = z
   .object({
     titulo: z.string().max(100, 'Máximo 100 caracteres').optional(),
-    conteudo: z.string().min(1, 'Conteúdo é obrigatório').max(5000, 'Máximo 5000 caracteres'),
-    redes_sociais: z.array(z.string()).min(1, 'Selecione pelo menos uma rede social'),
+    conteudo: z.string().max(5000, 'Máximo 5000 caracteres').optional(),
+    redes_sociais: z.array(z.string()).optional(),
     agendar: z.enum(['now', 'later']),
     agendado_para: z.string().optional(),
   })
@@ -147,6 +147,25 @@ export default function CreatePost() {
     if (!user) return
 
     try {
+      if (submitAction === 'publish') {
+        if (!values.titulo) {
+          toast.error('Preencha o título')
+          return
+        }
+        if (!values.conteudo) {
+          toast.error('Preencha a descrição')
+          return
+        }
+        if (files.length === 0 && existingImages.length === 0) {
+          toast.error('Adicione uma imagem')
+          return
+        }
+        if (!values.redes_sociais || values.redes_sociais.length === 0) {
+          toast.error('Selecione pelo menos uma rede')
+          return
+        }
+      }
+
       const isOverLimit = watchRedes.some((n) => {
         const limit = n === 'facebook' ? 63206 : n === 'linkedin' ? 3000 : 2200
         return watchConteudo.length > limit
@@ -171,7 +190,7 @@ export default function CreatePost() {
       const payload = {
         titulo: values.titulo,
         conteudo: values.conteudo,
-        redes_sociais: values.redes_sociais,
+        redes_sociais: values.redes_sociais || [],
         status,
         criador_id: user.id,
         empresa_id: user.empresa_id,
@@ -179,24 +198,32 @@ export default function CreatePost() {
         agendamento_tipo: values.agendar === 'now' ? 'agora' : 'depois',
       }
 
-      if (isEditMode && id) {
-        const response = await updatePostWithFiles(id, payload, files)
-        console.log(`[Bug Scanner] API Response (Update):`, response)
+      let postIdToPublish = id
 
-        if (values.agendar === 'now' && submitAction === 'publish') {
+      if (isEditMode && id) {
+        await updatePostWithFiles(id, payload, files)
+      } else {
+        const response = await createPostWithFiles(payload, files)
+        postIdToPublish = response.id
+      }
+
+      if (submitAction === 'publish' && values.agendar === 'now' && postIdToPublish) {
+        const publishResult = await publicarPost(postIdToPublish, values.redes_sociais || [])
+        if (publishResult.success) {
           toast.success('Post publicado com sucesso!')
-        } else if (submitAction === 'publish') {
-          toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
+          setTimeout(() => navigate('/posts'), 2000)
         } else {
-          toast.success('Post atualizado e salvo como rascunho!')
+          publishResult.errors.forEach((err) => {
+            toast.error(`Falha ao publicar na rede: ${err.rede}`)
+          })
         }
+      } else if (submitAction === 'publish') {
+        toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
         setTimeout(() => navigate('/posts'), 2000)
       } else {
-        await createPostWithFiles(payload, files)
-        if (status === 'rascunho') toast.success('Post salvo como rascunho!')
-        else if (values.agendar === 'later')
-          toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
-        else toast.success('Post publicado com sucesso!')
+        toast.success(
+          isEditMode ? 'Post atualizado e salvo como rascunho!' : 'Post salvo como rascunho!',
+        )
         setTimeout(() => navigate('/posts'), 2000)
       }
     } catch (error: any) {
@@ -204,11 +231,7 @@ export default function CreatePost() {
     }
   }
 
-  const isSubmitDisabled =
-    form.formState.isSubmitting ||
-    watchConteudo.length === 0 ||
-    watchRedes.length === 0 ||
-    loadingPost
+  const isSubmitDisabled = form.formState.isSubmitting || loadingPost
 
   if (loadingPost) {
     return (
