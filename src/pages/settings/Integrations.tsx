@@ -75,25 +75,61 @@ export default function Integrations() {
   const [connectModalOpen, setConnectModalOpen] = useState(false)
   const [disconnectModalOpen, setDisconnectModalOpen] = useState(false)
   const [selectedRede, setSelectedRede] = useState<any>(null)
+  const [isAuthorizing, setIsAuthorizing] = useState(false)
+
+  const loadData = () => {
+    setLoading(true)
+    setError(false)
+    getIntegracoes()
+      .then(async (data) => {
+        const now = new Date()
+        const updatedData = await Promise.all(
+          data.map(async (int) => {
+            if (int.status === 'conectado' && int.data_expiracao) {
+              const expDate = new Date(int.data_expiracao)
+              if (expDate < now) {
+                const res = await updateIntegracao(int.id, { status: 'expirado' })
+                return res
+              }
+            }
+            return int
+          }),
+        )
+        setIntegracoes(updatedData)
+      })
+      .catch(() => {
+        setError(true)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }
 
   useEffect(() => {
-    getIntegracoes()
-      .then(setIntegracoes)
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+    loadData()
   }, [])
 
   const handleConnect = async () => {
     if (!selectedRede || !user?.empresa_id) return
+    setIsAuthorizing(true)
+
+    // Simulate OAuth flow wait
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
     try {
       const existing = integracoes.find((i) => i.rede_social === selectedRede.id)
+
+      const expDate = new Date()
+      expDate.setDate(expDate.getDate() + 60)
+
       const payload = {
         status: 'conectado' as const,
         access_token: `mock_token_${selectedRede.id}`,
+        data_expiracao: expDate.toISOString(),
       }
 
       const res = existing
-        ? await updateIntegracao(existing.id, { ...payload, data_expiracao: '' })
+        ? await updateIntegracao(existing.id, payload)
         : await createIntegracao({
             empresa_id: user.empresa_id,
             rede_social: selectedRede.id,
@@ -107,6 +143,8 @@ export default function Integrations() {
       setConnectModalOpen(false)
     } catch (err) {
       toast.error(`Erro ao conectar ${selectedRede.name}.`)
+    } finally {
+      setIsAuthorizing(false)
     }
   }
 
@@ -149,9 +187,19 @@ export default function Integrations() {
       )}
 
       {error && (
-        <Alert variant="destructive" className="border-none">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Erro ao carregar integrações. Tente novamente.</AlertDescription>
+        <Alert variant="destructive" className="border-none flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Erro ao carregar integrações. Tente novamente.</AlertDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadData}
+            className="bg-transparent hover:bg-destructive-foreground/10 text-destructive"
+          >
+            Tentar novamente
+          </Button>
         </Alert>
       )}
 
@@ -186,12 +234,12 @@ export default function Integrations() {
                   <CardContent className="py-4 flex-1">
                     {isConn && int?.created ? (
                       <p className="text-sm font-medium text-muted-foreground">
-                        Conectado em {format(new Date(int.created), 'dd/MM/yyyy')}
+                        Conectado desde {format(new Date(int.created), 'dd/MM/yyyy')}
                       </p>
                     ) : isExp && int?.data_expiracao ? (
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">
-                          Conectado em{' '}
+                          Conectado desde{' '}
                           {int.created ? format(new Date(int.created), 'dd/MM/yyyy') : ''}
                         </p>
                         <p className="text-sm font-medium text-destructive">
@@ -221,7 +269,10 @@ export default function Integrations() {
             })}
       </div>
 
-      <Dialog open={connectModalOpen} onOpenChange={setConnectModalOpen}>
+      <Dialog
+        open={connectModalOpen}
+        onOpenChange={(open) => !isAuthorizing && setConnectModalOpen(open)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Conectar {selectedRede?.name}</DialogTitle>
@@ -231,14 +282,19 @@ export default function Integrations() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConnectModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConnectModalOpen(false)}
+              disabled={isAuthorizing}
+            >
               Cancelar
             </Button>
             <Button
               style={{ backgroundColor: selectedRede?.color, color: '#fff' }}
               onClick={handleConnect}
+              disabled={isAuthorizing}
             >
-              Autorizar {selectedRede?.name}
+              {isAuthorizing ? 'Autorizando...' : `Autorizar ${selectedRede?.name}`}
             </Button>
           </DialogFooter>
         </DialogContent>
