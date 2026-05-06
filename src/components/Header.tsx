@@ -24,7 +24,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <Link to="/" className="transition-opacity hover:opacity-80">
-          <img src="/logo-supremo-aroma.png" alt="Supremo Aroma" className="h-8 w-auto md:h-10" />
+          <img src="/logo-supremo-aroma.svg" alt="Supremo Aroma" className="h-8 w-auto md:h-10" />
         </Link>
       </div>
 
