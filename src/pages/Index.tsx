@@ -92,7 +92,7 @@ export default function Index() {
   useRealtime('posts', () => loadData())
 
   useEffect(() => {
-    if (!data) return
+    if (!data || !data.metrics) return
 
     data.metrics.forEach((m: any) => {
       const post = m.expand?.post_id
@@ -155,16 +155,16 @@ export default function Index() {
   }
 
   const alerts =
-    data?.posts.filter((post: any) => {
+    data?.posts?.filter((post: any) => {
       if (post.status !== 'publicado') return false
       const hoursSincePub =
         (new Date().getTime() - new Date(post.publicado_em || post.created).getTime()) /
         (1000 * 60 * 60)
-      const metric = data.metrics.find((m: any) => m.post_id === post.id)
+      const metric = data.metrics?.find((m: any) => m.post_id === post.id)
       return hoursSincePub >= 24 && (metric?.curtidas || 0) === 0
     }) || []
 
-  const publishedCount = data?.posts.filter((p: any) => p.status === 'publicado').length || 0
+  const publishedCount = data?.posts?.filter((p: any) => p.status === 'publicado').length || 0
 
   return (
     <div className="space-y-6">
@@ -209,28 +209,28 @@ export default function Index() {
         {[
           {
             title: 'Total de Curtidas',
-            val: data?.stats.curtidas || 0,
+            val: data?.stats?.curtidas || 0,
             icon: Heart,
             color: 'text-pink-500',
             bg: 'bg-pink-50',
           },
           {
             title: 'Total de Comentários',
-            val: data?.stats.comentarios || 0,
+            val: data?.stats?.comentarios || 0,
             icon: MessageCircle,
             color: 'text-blue-500',
             bg: 'bg-blue-50',
           },
           {
             title: 'Alcance Total',
-            val: data?.stats.alcance || 0,
+            val: data?.stats?.alcance || 0,
             icon: Megaphone,
             color: 'text-purple-500',
             bg: 'bg-purple-50',
           },
           {
             title: 'Impressões Totais',
-            val: data?.stats.impressoes || 0,
+            val: data?.stats?.impressoes || 0,
             icon: Eye,
             color: 'text-green-500',
             bg: 'bg-green-50',
@@ -355,7 +355,7 @@ export default function Index() {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : data?.posts.length === 0 ? (
+            ) : !data?.posts || data.posts.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground mb-4">Nenhum post criado ainda</p>
@@ -383,7 +383,7 @@ export default function Index() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.posts.slice(0, 5).map((post: any) => (
+                  {data?.posts?.slice(0, 5).map((post: any) => (
                     <TableRow key={post.id}>
                       <TableCell
                         className="pl-6 font-medium max-w-[200px] truncate"
