@@ -9,7 +9,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, Edit, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Edit, Trash2, BarChart2 } from 'lucide-react'
+import { PostPerformanceModal } from './PostPerformanceModal'
 import { format, parseISO } from 'date-fns'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -17,6 +18,7 @@ export function ReportsTable({ data }: { data: ReportData[] }) {
   const [sortCol, setSortCol] = useState<keyof ReportData>('data')
   const [sortDesc, setSortDesc] = useState(true)
   const [page, setPage] = useState(1)
+  const [selectedReport, setSelectedReport] = useState<ReportData | null>(null)
 
   if (data.length === 0) return null
 
@@ -115,7 +117,10 @@ export function ReportsTable({ data }: { data: ReportData[] }) {
             {paginated.map((d) => {
               const taxa =
                 d.alcance > 0
-                  ? (((d.curtidas + d.comentarios) / d.alcance) * 100).toFixed(1)
+                  ? (
+                      ((d.curtidas + d.comentarios + d.compartilhamentos) / d.alcance) *
+                      100
+                    ).toFixed(1)
                   : '0.0'
               return (
                 <TableRow key={d.id}>
@@ -136,6 +141,19 @@ export function ReportsTable({ data }: { data: ReportData[] }) {
                   <TableCell>{taxa}%</TableCell>
                   <TableCell className="print:hidden">
                     <div className="flex gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-500"
+                            onClick={() => setSelectedReport(d)}
+                          >
+                            <BarChart2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Desempenho</TooltipContent>
+                      </Tooltip>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -155,7 +173,9 @@ export function ReportsTable({ data }: { data: ReportData[] }) {
       <div className="block md:hidden p-4 space-y-4 print:hidden">
         {paginated.map((d) => {
           const taxa =
-            d.alcance > 0 ? (((d.curtidas + d.comentarios) / d.alcance) * 100).toFixed(1) : '0.0'
+            d.alcance > 0
+              ? (((d.curtidas + d.comentarios + d.compartilhamentos) / d.alcance) * 100).toFixed(1)
+              : '0.0'
           return (
             <div key={d.id} className="bg-slate-50 p-4 rounded-lg border space-y-2">
               <div className="flex justify-between items-start">
@@ -181,10 +201,27 @@ export function ReportsTable({ data }: { data: ReportData[] }) {
                   <span className="text-slate-400 block">Taxa</span> {taxa}%
                 </div>
               </div>
+              <div className="pt-2 border-t flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-blue-600 gap-1"
+                  onClick={() => setSelectedReport(d)}
+                >
+                  <BarChart2 className="w-4 h-4" />
+                  Ver desempenho
+                </Button>
+              </div>
             </div>
           )
         })}
       </div>
+
+      <PostPerformanceModal
+        isOpen={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        report={selectedReport}
+      />
 
       {totalPages > 1 && (
         <div className="p-4 border-t flex justify-end gap-2 print:hidden">

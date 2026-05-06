@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 export interface ReportData {
   id: string
+  post_id?: string
   titulo: string
   rede: string
   data: string
@@ -15,6 +16,7 @@ export interface ReportData {
 const MOCK_DATA: ReportData[] = [
   {
     id: 'm1',
+    post_id: 'p1',
     titulo: 'Novo perfume Flor de Lótus',
     rede: 'instagram',
     data: '2026-04-15T12:00:00Z',
@@ -25,6 +27,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm2',
+    post_id: 'p2',
     titulo: 'Promoção Black Friday',
     rede: 'facebook',
     data: '2026-04-14T12:00:00Z',
@@ -35,6 +38,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm3',
+    post_id: 'p3',
     titulo: 'Dica de combinação',
     rede: 'linkedin',
     data: '2026-04-13T12:00:00Z',
@@ -45,6 +49,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm4',
+    post_id: 'p4',
     titulo: 'Unboxing Supremo Aroma',
     rede: 'tiktok',
     data: '2026-04-12T12:00:00Z',
@@ -55,6 +60,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm5',
+    post_id: 'p5',
     titulo: 'Entrevista com perfumista',
     rede: 'instagram',
     data: '2026-04-11T12:00:00Z',
@@ -65,6 +71,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm6',
+    post_id: 'p6',
     titulo: 'Novo catálogo 2026',
     rede: 'facebook',
     data: '2026-04-10T12:00:00Z',
@@ -75,6 +82,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm7',
+    post_id: 'p7',
     titulo: 'Dica de armazenamento',
     rede: 'linkedin',
     data: '2026-04-09T12:00:00Z',
@@ -85,6 +93,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm8',
+    post_id: 'p8',
     titulo: 'Behind the scenes',
     rede: 'tiktok',
     data: '2026-04-08T12:00:00Z',
@@ -95,6 +104,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm9',
+    post_id: 'p9',
     titulo: 'Promoção de Páscoa',
     rede: 'instagram',
     data: '2026-04-07T12:00:00Z',
@@ -105,6 +115,7 @@ const MOCK_DATA: ReportData[] = [
   },
   {
     id: 'm10',
+    post_id: 'p10',
     titulo: 'Novo fornecedor parceiro',
     rede: 'linkedin',
     data: '2026-04-06T12:00:00Z',
@@ -129,6 +140,7 @@ export async function fetchReportsData(startDate: Date, endDate: Date, networks:
 
     data = metrics.map((m) => ({
       id: m.id,
+      post_id: m.post_id,
       titulo: m.expand?.post_id?.titulo || 'Post sem título',
       rede: (m.rede_social || 'facebook').toLowerCase(),
       data: m.updated,
@@ -164,7 +176,9 @@ export function exportCSV(data: ReportData[]) {
   ]
   const rows = data.map((d) => {
     const taxa =
-      d.alcance > 0 ? (((d.curtidas + d.comentarios) / d.alcance) * 100).toFixed(2) : '0.00'
+      d.alcance > 0
+        ? (((d.curtidas + d.comentarios + d.compartilhamentos) / d.alcance) * 100).toFixed(2)
+        : '0.00'
     const cleanTitle = d.titulo.replace(/"/g, '""')
     return `"${cleanTitle}","${d.rede}","${d.data.split('T')[0]}",${d.curtidas},${d.comentarios},${d.compartilhamentos},${d.alcance},${taxa}%`
   })
