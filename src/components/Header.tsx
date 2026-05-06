@@ -1,4 +1,5 @@
 import { LogOut, User } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Notifications } from './Notifications'
@@ -22,6 +23,9 @@ export function Header() {
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
+        <Link to="/" className="transition-opacity hover:opacity-80">
+          <img src="/logo-supremo-aroma.png" alt="Supremo Aroma" className="h-8 w-auto md:h-10" />
+        </Link>
       </div>
 
       <div className="flex items-center gap-4">
