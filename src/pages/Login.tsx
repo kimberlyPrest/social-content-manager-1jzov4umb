@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { Skeleton } from '@/components/ui/skeleton'
+import logoUrl from '@/assets/logo-supremo-aroma-e0694.png'
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -319,16 +320,17 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
-        <div className="bg-indigo-600 p-8 text-center text-white">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
-            <BarChart2 className="h-8 w-8" />
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl border">
+        <div className="bg-slate-50 p-8 text-center border-b">
+          <div className="mx-auto flex items-center justify-center">
+            <img src={logoUrl} alt="Supremo Aroma" className="h-16 w-auto object-contain" />
           </div>
-          <h1 className="mt-4 text-2xl font-bold">Supremo Aroma</h1>
-          <p className="mt-2 text-indigo-200">Social Content Manager</p>
+          <p className="mt-4 text-sm font-medium text-slate-500 uppercase tracking-widest">
+            Social Content Manager
+          </p>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 pt-6">
           {errorMsg && (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>{errorMsg}</AlertDescription>

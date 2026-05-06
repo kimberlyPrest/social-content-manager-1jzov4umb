@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Header } from './Header'
 import { cn } from '@/lib/utils'
+import logoUrl from '@/assets/logo-supremo-aroma-e0694.png'
 
 const navItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: '#3B82F6' },
@@ -55,10 +56,18 @@ export default function Layout() {
           } as React.CSSProperties
         }
       >
-        <SidebarHeader className="h-16 flex items-center justify-center border-b border-white/10 text-[#F3F4F6]">
-          <div className="flex items-center gap-2 font-bold text-xl px-2 w-full overflow-hidden">
-            <BarChart2 className="h-8 w-8 text-[#3B82F6] shrink-0" />
-            <span className="group-data-[collapsible=icon]:hidden truncate">Supremo Aroma</span>
+        <SidebarHeader className="h-16 flex items-center justify-center border-b border-white/10">
+          <div className="flex items-center justify-center px-2 w-full overflow-hidden">
+            <div className="bg-white/95 p-1.5 rounded-md flex items-center justify-center w-full min-h-[40px]">
+              <img
+                src={logoUrl}
+                alt="Supremo Aroma"
+                className="h-8 w-auto object-contain group-data-[collapsible=icon]:hidden"
+              />
+              <span className="font-bold text-lg text-[#523A28] hidden group-data-[collapsible=icon]:block">
+                SA
+              </span>
+            </div>
           </div>
         </SidebarHeader>
         <SidebarContent className="px-2 pt-4">

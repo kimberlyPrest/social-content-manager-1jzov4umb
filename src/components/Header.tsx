@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import logoUrl from '@/assets/logo-supremo-aroma-e0694.png'
 
 export function Header() {
   const { user, signOut } = useAuth()
@@ -24,7 +25,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <Link to="/" className="transition-opacity hover:opacity-80">
-          <img src="/logo-supremo-aroma.svg" alt="Supremo Aroma" className="h-8 w-auto md:h-10" />
+          <img src={logoUrl} alt="Supremo Aroma" className="h-8 w-auto md:h-10 object-contain" />
         </Link>
       </div>
 
