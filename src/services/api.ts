@@ -214,7 +214,7 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
   })
 
   let hasError = false
-  const errors: { rede: string; error: any }[] = []
+  const errors: { rede: string; error: any; isAuthError?: boolean }[] = []
 
   for (const rede of redesSelecionadas) {
     console.log('📤 Publicando em:', rede)
@@ -251,6 +251,16 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          console.error(
+            `❌ Erro de autenticação (401) ao publicar em ${rede}. Atualizando status da integração para expirado.`,
+          )
+          await pb.collection('integracao_redes').update(integracao.id, { status: 'expirado' })
+          const err = new Error(`API error: ${response.status} ${response.statusText}`)
+          hasError = true
+          errors.push({ rede, error: err, isAuthError: true })
+          continue
+        }
         throw new Error(`API error: ${response.status} ${response.statusText}`)
       }
 
@@ -269,6 +279,10 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
       publicado_em: new Date().toISOString(),
     })
     console.log('✅ Post publicado com sucesso!')
+  } else {
+    await pb.collection('posts').update(postId, {
+      status: 'falhou',
+    })
   }
 
   return { success: !hasError, errors }

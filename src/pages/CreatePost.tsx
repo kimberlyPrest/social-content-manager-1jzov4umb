@@ -213,9 +213,19 @@ export default function CreatePost() {
           toast.success('Post publicado com sucesso!')
           setTimeout(() => navigate('/posts'), 2000)
         } else {
-          publishResult.errors.forEach((err) => {
-            toast.error(`Falha ao publicar na rede: ${err.rede}`)
+          let hasAuthError = false
+          publishResult.errors.forEach((err: any) => {
+            if (err.isAuthError) {
+              hasAuthError = true
+            } else {
+              toast.error(`Falha ao publicar na rede: ${err.rede}`)
+            }
           })
+          if (hasAuthError) {
+            toast.error(
+              'Erro de autenticação: O token da rede social expirou. Por favor, acesse Integrações e reconecte sua conta.',
+            )
+          }
         }
       } else if (submitAction === 'publish') {
         toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
