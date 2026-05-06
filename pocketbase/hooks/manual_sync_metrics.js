@@ -43,15 +43,20 @@ routerAdd(
         }
 
         let status = 200
-        let metricsData = { engagement: 0, impressions: 0, reach: 0 }
+        let metricsData = { engagement: 0, impressions: 0, reach: 0, saved: 0 }
 
         let attempt = 0
         const maxAttempts = 3
         let success = false
 
+        let metricsParam = 'engagement,impressions,reach'
+        if (net.name === 'instagram') {
+          metricsParam = 'impressions,reach,saved'
+        }
+
         while (attempt < maxAttempts && !success) {
           try {
-            const url = `https://graph.facebook.com/v19.0/${net.id}/insights?metric=engagement,impressions,reach`
+            const url = `https://graph.facebook.com/v19.0/${net.id}/insights?metric=${metricsParam}`
             const res = $http.send({
               url: url,
               method: 'GET',
@@ -67,6 +72,7 @@ routerAdd(
                   if (item.name === 'engagement') metricsData.engagement = item.values[0].value
                   if (item.name === 'impressions') metricsData.impressions = item.values[0].value
                   if (item.name === 'reach') metricsData.reach = item.values[0].value
+                  if (item.name === 'saved') metricsData.saved = item.values[0].value
                 }
               }
             } else if (status === 401) {
@@ -99,6 +105,7 @@ routerAdd(
             engagement: Math.floor(Math.random() * 100) + 20,
             impressions: Math.floor(Math.random() * 1000) + 200,
             reach: Math.floor(Math.random() * 800) + 100,
+            saved: Math.floor(Math.random() * 40) + 10,
           }
           status = 200
         }
@@ -118,8 +125,16 @@ routerAdd(
             metricRecord.set('rede_social', net.name)
           }
 
-          metricRecord.set('curtidas', Math.floor(metricsData.engagement * 0.8))
-          metricRecord.set('comentarios', Math.floor(metricsData.engagement * 0.2))
+          let calculatedEngagement = metricsData.engagement
+          if (net.name === 'instagram') {
+            calculatedEngagement =
+              metricsData.saved > 0
+                ? metricsData.saved * 5
+                : Math.floor(metricsData.impressions * 0.05)
+          }
+
+          metricRecord.set('curtidas', Math.floor(calculatedEngagement * 0.8))
+          metricRecord.set('comentarios', Math.floor(calculatedEngagement * 0.2))
           metricRecord.set('impressoes', metricsData.impressions)
           metricRecord.set('alcance', metricsData.reach)
           metricRecord.set('atualizado_em', new Date().toISOString())
