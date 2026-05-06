@@ -13,119 +13,6 @@ export interface ReportData {
   alcance: number
 }
 
-const MOCK_DATA: ReportData[] = [
-  {
-    id: 'm1',
-    post_id: 'p1',
-    titulo: 'Novo perfume Flor de Lótus',
-    rede: 'instagram',
-    data: '2026-04-15T12:00:00Z',
-    curtidas: 234,
-    comentarios: 18,
-    compartilhamentos: 5,
-    alcance: 1200,
-  },
-  {
-    id: 'm2',
-    post_id: 'p2',
-    titulo: 'Promoção Black Friday',
-    rede: 'facebook',
-    data: '2026-04-14T12:00:00Z',
-    curtidas: 156,
-    comentarios: 12,
-    compartilhamentos: 8,
-    alcance: 890,
-  },
-  {
-    id: 'm3',
-    post_id: 'p3',
-    titulo: 'Dica de combinação',
-    rede: 'linkedin',
-    data: '2026-04-13T12:00:00Z',
-    curtidas: 89,
-    comentarios: 7,
-    compartilhamentos: 2,
-    alcance: 450,
-  },
-  {
-    id: 'm4',
-    post_id: 'p4',
-    titulo: 'Unboxing Supremo Aroma',
-    rede: 'tiktok',
-    data: '2026-04-12T12:00:00Z',
-    curtidas: 412,
-    comentarios: 35,
-    compartilhamentos: 15,
-    alcance: 2100,
-  },
-  {
-    id: 'm5',
-    post_id: 'p5',
-    titulo: 'Entrevista com perfumista',
-    rede: 'instagram',
-    data: '2026-04-11T12:00:00Z',
-    curtidas: 178,
-    comentarios: 14,
-    compartilhamentos: 6,
-    alcance: 950,
-  },
-  {
-    id: 'm6',
-    post_id: 'p6',
-    titulo: 'Novo catálogo 2026',
-    rede: 'facebook',
-    data: '2026-04-10T12:00:00Z',
-    curtidas: 145,
-    comentarios: 10,
-    compartilhamentos: 4,
-    alcance: 720,
-  },
-  {
-    id: 'm7',
-    post_id: 'p7',
-    titulo: 'Dica de armazenamento',
-    rede: 'linkedin',
-    data: '2026-04-09T12:00:00Z',
-    curtidas: 67,
-    comentarios: 5,
-    compartilhamentos: 1,
-    alcance: 320,
-  },
-  {
-    id: 'm8',
-    post_id: 'p8',
-    titulo: 'Behind the scenes',
-    rede: 'tiktok',
-    data: '2026-04-08T12:00:00Z',
-    curtidas: 523,
-    comentarios: 42,
-    compartilhamentos: 20,
-    alcance: 2800,
-  },
-  {
-    id: 'm9',
-    post_id: 'p9',
-    titulo: 'Promoção de Páscoa',
-    rede: 'instagram',
-    data: '2026-04-07T12:00:00Z',
-    curtidas: 298,
-    comentarios: 22,
-    compartilhamentos: 9,
-    alcance: 1500,
-  },
-  {
-    id: 'm10',
-    post_id: 'p10',
-    titulo: 'Novo fornecedor parceiro',
-    rede: 'linkedin',
-    data: '2026-04-06T12:00:00Z',
-    curtidas: 112,
-    comentarios: 8,
-    compartilhamentos: 3,
-    alcance: 580,
-  },
-]
-
 export async function fetchReportsData(startDate: Date, endDate: Date, networks: string[]) {
   let data: ReportData[] = []
 
@@ -150,12 +37,10 @@ export async function fetchReportsData(startDate: Date, endDate: Date, networks:
       alcance: m.alcance || 0,
     }))
   } catch (err) {
-    console.warn('Fallback to mock data for reports due to error or missing data', err)
+    console.warn('Failed to fetch reports data', err)
   }
 
-  const combined = [...data, ...MOCK_DATA]
-
-  return combined.filter((d) => {
+  return data.filter((d) => {
     const itemDate = new Date(d.data)
     const inDate = itemDate >= startDate && itemDate <= endDate
     const inNetwork = networks.includes(d.rede.toLowerCase())

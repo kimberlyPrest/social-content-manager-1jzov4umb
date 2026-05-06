@@ -185,7 +185,7 @@ export default function Integrations() {
 
       const payload = {
         status: 'conectado' as const,
-        access_token: `mock_token_${selectedRede.id}`,
+        access_token: `connected_token_${selectedRede.id}_${Date.now()}`,
         data_expiracao: expDate.toISOString(),
       }
 

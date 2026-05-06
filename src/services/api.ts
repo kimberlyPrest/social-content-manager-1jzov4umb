@@ -246,8 +246,6 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ message: post.conteudo }),
-      }).catch(() => {
-        return { ok: true, json: async () => ({ id: 'mock_success_id' }) } as Response
       })
 
       if (!response.ok) {

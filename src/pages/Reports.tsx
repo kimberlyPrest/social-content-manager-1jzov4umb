@@ -66,6 +66,13 @@ export default function Reports() {
           </div>
           <Skeleton className="h-[400px] w-full" />
         </div>
+      ) : data.length === 0 ? (
+        <div className="py-20 text-center border-2 border-dashed rounded-xl bg-muted/10 mt-6">
+          <h3 className="text-lg font-medium text-slate-700 mb-1">Sem dados disponíveis</h3>
+          <p className="text-slate-500">
+            Nenhuma métrica foi encontrada para o período e redes selecionadas.
+          </p>
+        </div>
       ) : (
         <>
           <ReportsMetrics data={data} />

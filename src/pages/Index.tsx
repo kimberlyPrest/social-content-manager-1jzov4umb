@@ -50,6 +50,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } fro
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { getDashboardData, syncMetrics, deletePost } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useAuth } from '@/hooks/use-auth'
 
 const statusColors: Record<string, string> = {
   rascunho: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent',
@@ -60,6 +61,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function Index() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -446,21 +448,28 @@ export default function Index() {
 
         <Card className="col-span-1 border-none shadow-sm">
           <CardHeader>
-            <CardTitle>Equipe Ativa</CardTitle>
+            <CardTitle>Sua Conta</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary/10 text-primary">AD</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">Admin</p>
-                <p className="text-xs text-muted-foreground">Logado agora</p>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user.foto_url} />
+                  <AvatarFallback className="bg-primary/10 text-primary uppercase">
+                    {user.name?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">Logado agora</p>
+                </div>
+                <Badge className="ml-auto bg-purple-100 text-purple-700 hover:bg-purple-100 border-transparent capitalize">
+                  {user.role}
+                </Badge>
               </div>
-              <Badge className="ml-auto bg-purple-100 text-purple-700 hover:bg-purple-100 border-transparent">
-                Admin
-              </Badge>
-            </div>
+            ) : (
+              <Skeleton className="h-10 w-full" />
+            )}
             <Button className="w-full mt-2" variant="outline" asChild>
               <Link to="/team">Gerenciar equipe</Link>
             </Button>
