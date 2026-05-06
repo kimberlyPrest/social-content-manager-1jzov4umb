@@ -3,6 +3,7 @@ import {
   getIntegracoes,
   createIntegracao,
   updateIntegracao,
+  deleteIntegracao,
   IntegracaoRede,
 } from '@/services/integracao_redes'
 import { useAuth } from '@/hooks/use-auth'
@@ -158,8 +159,8 @@ export default function Integrations() {
     const existing = integracoes.find((i) => i.rede_social === selectedRede?.id)
     if (!existing) return
     try {
-      const res = await updateIntegracao(existing.id, { status: 'desconectado', access_token: '' })
-      setIntegracoes((prev) => prev.map((i) => (i.id === res.id ? res : i)))
+      await deleteIntegracao(existing.id)
+      setIntegracoes((prev) => prev.filter((i) => i.id !== existing.id))
       toast.success(`${selectedRede.name} desconectado com sucesso!`)
       setDisconnectModalOpen(false)
     } catch (err) {
