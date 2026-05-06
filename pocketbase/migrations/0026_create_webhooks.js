@@ -1,12 +1,5 @@
 migrate(
   (app) => {
-    let empresaColId = ''
-    try {
-      empresaColId = app.findCollectionByNameOrId('empresas').id
-    } catch (_) {
-      empresaColId = app.findCollectionByNameOrId('companies').id
-    }
-
     const webhooks = new Collection({
       name: 'webhooks',
       type: 'base',
@@ -16,14 +9,7 @@ migrate(
       updateRule: 'empresa_id = @request.auth.empresa_id',
       deleteRule: 'empresa_id = @request.auth.empresa_id',
       fields: [
-        {
-          name: 'empresa_id',
-          type: 'relation',
-          required: true,
-          collectionId: empresaColId,
-          cascadeDelete: true,
-          maxSelect: 1,
-        },
+        { name: 'empresa_id', type: 'text', required: true },
         { name: 'url', type: 'url', required: true },
         { name: 'secret', type: 'text' },
         { name: 'eventos', type: 'json', required: true },
@@ -62,7 +48,11 @@ migrate(
     app.save(logs)
   },
   (app) => {
-    app.delete(app.findCollectionByNameOrId('webhook_logs'))
-    app.delete(app.findCollectionByNameOrId('webhooks'))
+    try {
+      app.delete(app.findCollectionByNameOrId('webhook_logs'))
+    } catch (_) {}
+    try {
+      app.delete(app.findCollectionByNameOrId('webhooks'))
+    } catch (_) {}
   },
 )
