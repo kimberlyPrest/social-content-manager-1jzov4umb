@@ -1,4 +1,5 @@
 cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
+  $app.logger().info('Iniciando verificação de posts agendados')
   const nowStr = new Date().toISOString().replace('T', ' ')
   let posts = []
   try {
@@ -11,16 +12,18 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
       { now: nowStr },
     )
   } catch (e) {
+    $app.logger().info('Encontrados 0 posts agendados para publicar')
     return // no rows found
   }
 
+  $app.logger().info(`Encontrados ${posts.length} posts agendados para publicar`)
+
   for (const post of posts) {
-    $app
-      .logger()
-      .info(`[PUBLISH_START] Initiation of the publication process via CRON`, 'post_id', post.id)
+    $app.logger().info(`Publicação iniciada para o post ${post.id}`, 'post_id', post.id)
 
     let allSuccess = true
     let anyAttempted = false
+    let retryLater = false
     let redes = []
     try {
       redes = JSON.parse(post.getString('redes_sociais') || '[]')
@@ -65,15 +68,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
       else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
       else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
-      $app
-        .logger()
-        .info(
-          `[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`,
-          'post_id',
-          post.id,
-          'secret',
-          tokenSecretKey,
-        )
+      $app.logger().info(`Lendo token para ${rede}`, 'post_id', post.id, 'secret', tokenSecretKey)
       const token = $secrets.get(tokenSecretKey)
       if (!token) {
         $app
@@ -88,10 +83,6 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         allSuccess = false
         continue
       }
-
-      $app
-        .logger()
-        .info(`[TOKEN_SUCCESS] Successfully retrieved token for ${rede}`, 'post_id', post.id)
 
       let url = ''
       let body = {}
@@ -141,17 +132,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         body = { post_info: { title: titulo, description: conteudo } }
       }
 
-      $app
-        .logger()
-        .info(
-          `[API_REQUEST] Sending request to ${rede}`,
-          'post_id',
-          post.id,
-          'endpoint',
-          url,
-          'payload',
-          JSON.stringify(body),
-        )
+      $app.logger().info(`Chamando API da ${rede}`, 'post_id', post.id, 'endpoint', url)
 
       try {
         const res = $http.send({
@@ -165,13 +146,9 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         $app
           .logger()
           .info(
-            `[API_RESPONSE] Response from ${rede}`,
+            `Resposta da API ${rede}: ${res.statusCode} - ${JSON.stringify(res.json || {})}`,
             'post_id',
             post.id,
-            'status',
-            res.statusCode,
-            'body',
-            JSON.stringify(res.json || {}),
           )
 
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -209,6 +186,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
               rede,
             )
           allSuccess = false
+          retryLater = true
         } else {
           allSuccess = false
         }
@@ -229,8 +207,35 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
     if (anyAttempted && allSuccess) {
       post.set('status', 'publicado')
       post.set('publicado_em', new Date().toISOString().replace('T', ' '))
+      $app.logger().info(`Status do post ${post.id} atualizado para publicado`, 'post_id', post.id)
+
+      try {
+        const atividades = $app.findCollectionByNameOrId('atividades')
+        const record = new Record(atividades)
+        record.set('empresa_id', post.getString('empresa_id'))
+        record.set('usuario_id', post.getString('criador_id'))
+        record.set('tipo', 'post_publicado')
+        record.set('descricao', 'O post foi publicado com sucesso através do agendamento.')
+        record.set('referencia_id', post.id)
+        $app.saveNoValidate(record)
+      } catch (err) {
+        $app.logger().warn('Failed to create atividade', 'error', err.message)
+      }
+    } else if (retryLater) {
+      const currentAgendado = new Date(post.getString('agendado_para').replace(' ', 'T'))
+      currentAgendado.setMinutes(currentAgendado.getMinutes() + 5)
+      post.set('agendado_para', currentAgendado.toISOString().replace('T', ' '))
+      post.set('status', 'agendado')
+      $app
+        .logger()
+        .info(
+          `Status do post ${post.id} atualizado para agendado (retry em 5m)`,
+          'post_id',
+          post.id,
+        )
     } else {
       post.set('status', 'falhou')
+      $app.logger().info(`Status do post ${post.id} atualizado para falhou`, 'post_id', post.id)
     }
     $app.saveNoValidate(post)
   }
