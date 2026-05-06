@@ -69,7 +69,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
       if (!token) {
         let tokenSecretKey = ''
         if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
-        else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
+        else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_API_KEY'
         else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
         else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
@@ -111,15 +111,143 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
 
       const fullText = `${titulo}\n\n${conteudo || ''}`.trim()
 
+      if (rede === 'instagram') {
+        const instaId = $secrets.get('INSTAGRAM_ID')
+        if (!instaId) {
+          $app
+            .logger()
+            .error('[INSTAGRAM_CONFIG_ERROR] Missing INSTAGRAM_ID secret', 'post_id', post.id)
+          allSuccess = false
+          continue
+        }
+        if (!hasImages) {
+          $app
+            .logger()
+            .error('[INSTAGRAM_NO_IMAGE] Instagram requires an image', 'post_id', post.id)
+          allSuccess = false
+          continue
+        }
+
+        const instaImageUrl = imageUrl || 'https://img.usecurling.com/p/800/800?q=post'
+
+        $app.logger().info(`[API_REQUEST] Chamando API da ${rede} (Step 1)`, 'post_id', post.id)
+        try {
+          const step1Res = $http.send({
+            url: `https://graph.facebook.com/v19.0/${instaId}/media`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image_url: instaImageUrl,
+              caption: fullText,
+              access_token: token,
+            }),
+            timeout: 30,
+          })
+
+          $app
+            .logger()
+            .info(
+              `[INSTAGRAM_STEP1] Status: ${step1Res.statusCode} Body: ${JSON.stringify(step1Res.json || {})}`,
+              'post_id',
+              post.id,
+            )
+
+          if (
+            step1Res.statusCode >= 200 &&
+            step1Res.statusCode < 300 &&
+            step1Res.json &&
+            step1Res.json.id
+          ) {
+            const creationId = step1Res.json.id
+
+            $app.logger().info(`[API_REQUEST] Chamando API da ${rede} (Step 2)`, 'post_id', post.id)
+            const step2Res = $http.send({
+              url: `https://graph.facebook.com/v19.0/${instaId}/media_publish`,
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                creation_id: creationId,
+                access_token: token,
+              }),
+              timeout: 30,
+            })
+
+            $app
+              .logger()
+              .info(
+                `[INSTAGRAM_STEP2] Status: ${step2Res.statusCode} Body: ${JSON.stringify(step2Res.json || {})}`,
+                'post_id',
+                post.id,
+              )
+
+            if (
+              step2Res.statusCode >= 200 &&
+              step2Res.statusCode < 300 &&
+              step2Res.json &&
+              step2Res.json.id
+            ) {
+              post.set('id_externo_instagram', step2Res.json.id)
+            } else {
+              if (step2Res.statusCode === 401) {
+                $app
+                  .logger()
+                  .error('[ERROR_401] Token expired/invalid for Instagram', 'post_id', post.id)
+                if (integracao) {
+                  integracao.set('status', 'expirado')
+                  $app.saveNoValidate(integracao)
+                }
+              } else if (step2Res.statusCode >= 500) {
+                $app
+                  .logger()
+                  .error(
+                    '[ERROR_500] Network-side server error at Step 2. Try again later',
+                    'post_id',
+                    post.id,
+                  )
+                retryLater = true
+              }
+              allSuccess = false
+            }
+          } else {
+            if (step1Res.statusCode === 401) {
+              $app
+                .logger()
+                .error('[ERROR_401] Token expired/invalid for Instagram', 'post_id', post.id)
+              if (integracao) {
+                integracao.set('status', 'expirado')
+                $app.saveNoValidate(integracao)
+              }
+            } else if (step1Res.statusCode >= 500) {
+              $app
+                .logger()
+                .error(
+                  '[ERROR_500] Network-side server error at Step 1. Try again later',
+                  'post_id',
+                  post.id,
+                )
+              retryLater = true
+            }
+            allSuccess = false
+          }
+        } catch (err) {
+          $app
+            .logger()
+            .error(
+              `[API_EXCEPTION] Exception calling instagram`,
+              'post_id',
+              post.id,
+              'error',
+              err.message,
+            )
+          allSuccess = false
+        }
+
+        continue
+      }
+
       if (rede === 'facebook') {
         url = 'https://graph.facebook.com/v19.0/me/feed'
         body = { message: fullText }
-      } else if (rede === 'instagram') {
-        url = 'https://graph.facebook.com/v19.0/me/media'
-        body = {
-          caption: fullText,
-          image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
-        }
       } else if (rede === 'linkedin') {
         url = 'https://api.linkedin.com/v2/ugcPosts'
         body = {
