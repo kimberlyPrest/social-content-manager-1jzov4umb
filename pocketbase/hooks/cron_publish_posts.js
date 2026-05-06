@@ -44,7 +44,13 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
     const conteudo = post.getString('conteudo')
     const imagens = post.get('imagens')
     const hasImages = imagens && (Array.isArray(imagens) ? imagens.length > 0 : imagens !== '')
-    const imageUrl = hasImages ? 'https://img.usecurling.com/p/800/800?q=post' : ''
+    let imageUrl = ''
+    if (hasImages) {
+      const imageName = Array.isArray(imagens) ? imagens[0] : imagens
+      let baseUrl = $os.getenv('VITE_POCKETBASE_URL')
+      if (baseUrl && baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1)
+      imageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
+    }
 
     for (const rede of redes) {
       let integracao
@@ -128,7 +134,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
           continue
         }
 
-        const instaImageUrl = imageUrl || 'https://img.usecurling.com/p/800/800?q=post'
+        const instaImageUrl = imageUrl || ''
 
         $app.logger().info(`[API_REQUEST] Chamando API da ${rede} (Step 1)`, 'post_id', post.id)
         try {
