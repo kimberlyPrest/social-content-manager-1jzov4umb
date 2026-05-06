@@ -160,10 +160,10 @@ export default function Integrations() {
     try {
       const res = await updateIntegracao(existing.id, { status: 'desconectado', access_token: '' })
       setIntegracoes((prev) => prev.map((i) => (i.id === res.id ? res : i)))
-      toast.success(`${selectedRede.name} desconectado.`)
+      toast.success(`${selectedRede.name} desconectado com sucesso!`)
       setDisconnectModalOpen(false)
     } catch (err) {
-      toast.error(`Erro ao desconectar ${selectedRede.name}.`)
+      toast.error(`Erro ao desconectar ${selectedRede.name}. Tente novamente.`)
     }
   }
 

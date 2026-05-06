@@ -12,7 +12,8 @@ onRecordAfterCreateSuccess((e) => {
     }
   }
 
-  $app.logger().info(`Starting publication process (create)`, 'post_id', post.id)
+  $app.logger().info(`[PUBLISH_START] Initiation of the publication process`, 'post_id', post.id)
+
   let allSuccess = true
   let anyAttempted = false
   let redes = []
@@ -28,6 +29,12 @@ onRecordAfterCreateSuccess((e) => {
     $app.saveNoValidate(post)
     return e.next()
   }
+
+  const titulo = post.getString('titulo')
+  const conteudo = post.getString('conteudo')
+  const imagens = post.get('imagens')
+  const hasImages = imagens && (Array.isArray(imagens) ? imagens.length > 0 : imagens !== '')
+  const imageUrl = hasImages ? 'https://img.usecurling.com/p/800/800?q=post' : ''
 
   for (const rede of redes) {
     let integracao
@@ -51,15 +58,35 @@ onRecordAfterCreateSuccess((e) => {
     if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
     else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
     else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
+    else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
+    $app
+      .logger()
+      .info(
+        `[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`,
+        'post_id',
+        post.id,
+        'secret',
+        tokenSecretKey,
+      )
     const token = $secrets.get(tokenSecretKey)
     if (!token) {
-      $app.logger().error(`Secret ${tokenSecretKey} is missing`, 'post_id', post.id, 'rede', rede)
+      $app
+        .logger()
+        .error(
+          `[TOKEN_ERROR] Secret ${tokenSecretKey} is missing`,
+          'post_id',
+          post.id,
+          'rede',
+          rede,
+        )
       allSuccess = false
       continue
     }
 
-    $app.logger().info(`Successfully retrieved token for ${rede}`, 'post_id', post.id)
+    $app
+      .logger()
+      .info(`[TOKEN_SUCCESS] Successfully retrieved token for ${rede}`, 'post_id', post.id)
 
     let url = ''
     let body = {}
@@ -68,12 +95,11 @@ onRecordAfterCreateSuccess((e) => {
       'Content-Type': 'application/json',
     }
 
-    const conteudo = post.getString('conteudo')
-    if (!conteudo) {
+    if (!conteudo && !titulo) {
       $app
         .logger()
         .error(
-          `Missing required content for ${rede} (400 Bad Request simulation)`,
+          `[MISSING_DATA] Missing required content or title for ${rede} (400 Bad Request simulation)`,
           'post_id',
           post.id,
         )
@@ -81,12 +107,17 @@ onRecordAfterCreateSuccess((e) => {
       continue
     }
 
+    const fullText = `${titulo}\n\n${conteudo || ''}`.trim()
+
     if (rede === 'facebook') {
       url = 'https://graph.facebook.com/v19.0/me/feed'
-      body = { message: conteudo }
+      body = { message: fullText }
     } else if (rede === 'instagram') {
       url = 'https://graph.facebook.com/v19.0/me/media'
-      body = { caption: conteudo, image_url: 'https://img.usecurling.com/p/800/800?q=post' }
+      body = {
+        caption: fullText,
+        image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
+      }
     } else if (rede === 'linkedin') {
       url = 'https://api.linkedin.com/v2/ugcPosts'
       body = {
@@ -94,21 +125,24 @@ onRecordAfterCreateSuccess((e) => {
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
-            shareCommentary: { text: conteudo },
+            shareCommentary: { text: fullText },
             shareMediaCategory: 'NONE',
           },
         },
         visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
       }
+    } else if (rede === 'tiktok') {
+      url = 'https://open.tiktokapis.com/v2/post/publish/video/init/'
+      body = { post_info: { title: titulo, description: conteudo } }
     }
 
     $app
       .logger()
       .info(
-        `Sending request to ${rede}`,
+        `[API_REQUEST] Sending request to ${rede}`,
         'post_id',
         post.id,
-        'url',
+        'endpoint',
         url,
         'payload',
         JSON.stringify(body),
@@ -126,7 +160,7 @@ onRecordAfterCreateSuccess((e) => {
       $app
         .logger()
         .info(
-          `Response from ${rede}`,
+          `[API_RESPONSE] Response from ${rede}`,
           'post_id',
           post.id,
           'status',
@@ -138,13 +172,21 @@ onRecordAfterCreateSuccess((e) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         // success
       } else if (res.statusCode === 401) {
-        $app.logger().error('Token expired/invalid', 'post_id', post.id, 'rede', rede)
+        $app
+          .logger()
+          .error(
+            '[ERROR_401] Token expired/invalid. Action required: Reconectar',
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
         allSuccess = false
       } else if (res.statusCode === 400) {
         $app
           .logger()
           .error(
-            'Bad Request, verify if required fields were sent',
+            '[ERROR_400] Bad Request. Action required: Check missing data (description or image)',
             'post_id',
             post.id,
             'rede',
@@ -152,13 +194,29 @@ onRecordAfterCreateSuccess((e) => {
           )
         allSuccess = false
       } else if (res.statusCode >= 500) {
-        $app.logger().error('Network-side failure (500)', 'post_id', post.id, 'rede', rede)
+        $app
+          .logger()
+          .error(
+            '[ERROR_500] Network-side server error. Action required: Try again later',
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
         allSuccess = false
       } else {
         allSuccess = false
       }
     } catch (err) {
-      $app.logger().error(`Exception calling ${rede}`, 'post_id', post.id, 'error', err.message)
+      $app
+        .logger()
+        .error(
+          `[API_EXCEPTION] Exception calling ${rede}`,
+          'post_id',
+          post.id,
+          'error',
+          err.message,
+        )
       allSuccess = false
     }
   }
@@ -188,7 +246,8 @@ onRecordAfterUpdateSuccess((e) => {
     }
   }
 
-  $app.logger().info(`Starting publication process (update)`, 'post_id', post.id)
+  $app.logger().info(`[PUBLISH_START] Initiation of the publication process`, 'post_id', post.id)
+
   let allSuccess = true
   let anyAttempted = false
   let redes = []
@@ -204,6 +263,12 @@ onRecordAfterUpdateSuccess((e) => {
     $app.saveNoValidate(post)
     return e.next()
   }
+
+  const titulo = post.getString('titulo')
+  const conteudo = post.getString('conteudo')
+  const imagens = post.get('imagens')
+  const hasImages = imagens && (Array.isArray(imagens) ? imagens.length > 0 : imagens !== '')
+  const imageUrl = hasImages ? 'https://img.usecurling.com/p/800/800?q=post' : ''
 
   for (const rede of redes) {
     let integracao
@@ -227,15 +292,35 @@ onRecordAfterUpdateSuccess((e) => {
     if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
     else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
     else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
+    else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
+    $app
+      .logger()
+      .info(
+        `[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`,
+        'post_id',
+        post.id,
+        'secret',
+        tokenSecretKey,
+      )
     const token = $secrets.get(tokenSecretKey)
     if (!token) {
-      $app.logger().error(`Secret ${tokenSecretKey} is missing`, 'post_id', post.id, 'rede', rede)
+      $app
+        .logger()
+        .error(
+          `[TOKEN_ERROR] Secret ${tokenSecretKey} is missing`,
+          'post_id',
+          post.id,
+          'rede',
+          rede,
+        )
       allSuccess = false
       continue
     }
 
-    $app.logger().info(`Successfully retrieved token for ${rede}`, 'post_id', post.id)
+    $app
+      .logger()
+      .info(`[TOKEN_SUCCESS] Successfully retrieved token for ${rede}`, 'post_id', post.id)
 
     let url = ''
     let body = {}
@@ -244,12 +329,11 @@ onRecordAfterUpdateSuccess((e) => {
       'Content-Type': 'application/json',
     }
 
-    const conteudo = post.getString('conteudo')
-    if (!conteudo) {
+    if (!conteudo && !titulo) {
       $app
         .logger()
         .error(
-          `Missing required content for ${rede} (400 Bad Request simulation)`,
+          `[MISSING_DATA] Missing required content or title for ${rede} (400 Bad Request simulation)`,
           'post_id',
           post.id,
         )
@@ -257,12 +341,17 @@ onRecordAfterUpdateSuccess((e) => {
       continue
     }
 
+    const fullText = `${titulo}\n\n${conteudo || ''}`.trim()
+
     if (rede === 'facebook') {
       url = 'https://graph.facebook.com/v19.0/me/feed'
-      body = { message: conteudo }
+      body = { message: fullText }
     } else if (rede === 'instagram') {
       url = 'https://graph.facebook.com/v19.0/me/media'
-      body = { caption: conteudo, image_url: 'https://img.usecurling.com/p/800/800?q=post' }
+      body = {
+        caption: fullText,
+        image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
+      }
     } else if (rede === 'linkedin') {
       url = 'https://api.linkedin.com/v2/ugcPosts'
       body = {
@@ -270,21 +359,24 @@ onRecordAfterUpdateSuccess((e) => {
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
-            shareCommentary: { text: conteudo },
+            shareCommentary: { text: fullText },
             shareMediaCategory: 'NONE',
           },
         },
         visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
       }
+    } else if (rede === 'tiktok') {
+      url = 'https://open.tiktokapis.com/v2/post/publish/video/init/'
+      body = { post_info: { title: titulo, description: conteudo } }
     }
 
     $app
       .logger()
       .info(
-        `Sending request to ${rede}`,
+        `[API_REQUEST] Sending request to ${rede}`,
         'post_id',
         post.id,
-        'url',
+        'endpoint',
         url,
         'payload',
         JSON.stringify(body),
@@ -302,7 +394,7 @@ onRecordAfterUpdateSuccess((e) => {
       $app
         .logger()
         .info(
-          `Response from ${rede}`,
+          `[API_RESPONSE] Response from ${rede}`,
           'post_id',
           post.id,
           'status',
@@ -314,13 +406,21 @@ onRecordAfterUpdateSuccess((e) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         // success
       } else if (res.statusCode === 401) {
-        $app.logger().error('Token expired/invalid', 'post_id', post.id, 'rede', rede)
+        $app
+          .logger()
+          .error(
+            '[ERROR_401] Token expired/invalid. Action required: Reconectar',
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
         allSuccess = false
       } else if (res.statusCode === 400) {
         $app
           .logger()
           .error(
-            'Bad Request, verify if required fields were sent',
+            '[ERROR_400] Bad Request. Action required: Check missing data (description or image)',
             'post_id',
             post.id,
             'rede',
@@ -328,13 +428,29 @@ onRecordAfterUpdateSuccess((e) => {
           )
         allSuccess = false
       } else if (res.statusCode >= 500) {
-        $app.logger().error('Network-side failure (500)', 'post_id', post.id, 'rede', rede)
+        $app
+          .logger()
+          .error(
+            '[ERROR_500] Network-side server error. Action required: Try again later',
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
         allSuccess = false
       } else {
         allSuccess = false
       }
     } catch (err) {
-      $app.logger().error(`Exception calling ${rede}`, 'post_id', post.id, 'error', err.message)
+      $app
+        .logger()
+        .error(
+          `[API_EXCEPTION] Exception calling ${rede}`,
+          'post_id',
+          post.id,
+          'error',
+          err.message,
+        )
       allSuccess = false
     }
   }

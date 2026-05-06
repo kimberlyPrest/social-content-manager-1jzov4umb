@@ -36,8 +36,8 @@ export default function TeamPage() {
   const { user } = useAuth()
   const [members, setMembers] = useState<RecordModel[]>([])
   const [loading, setLoading] = useState(true)
-  const [isInviteOpen, setIsInviteOpen] = useState(false)
 
+  const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [inviteData, setInviteData] = useState({
     email: '',
     name: '',
@@ -45,6 +45,17 @@ export default function TeamPage() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Edit Modal State
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<RecordModel | null>(null)
+  const [editData, setEditData] = useState({
+    name: '',
+    email: '',
+    data_nascimento: '',
+    foto_url: '',
+  })
+  const [editSubmitting, setEditSubmitting] = useState(false)
 
   const isMaster = user?.role === 'master'
   const isAdmin = user?.role === 'admin'
@@ -112,6 +123,48 @@ export default function TeamPage() {
     }
   }
 
+  const handleEditClick = (member: RecordModel) => {
+    if (!canManage) {
+      toast.error('Você não tem permissão')
+      return
+    }
+    setSelectedMember(member)
+    setEditData({
+      name: member.name || '',
+      email: member.email || '',
+      data_nascimento: member.data_nascimento ? member.data_nascimento.split(' ')[0] : '',
+      foto_url: member.foto_url || '',
+    })
+    setIsEditOpen(true)
+  }
+
+  const handleEditSave = async () => {
+    if (!canManage) {
+      toast.error('Você não tem permissão')
+      return
+    }
+    if (!selectedMember) return
+    setEditSubmitting(true)
+    try {
+      const payload: any = {
+        name: editData.name,
+        email: editData.email,
+        foto_url: editData.foto_url,
+      }
+      if (editData.data_nascimento) {
+        payload.data_nascimento = editData.data_nascimento + ' 00:00:00.000Z'
+      }
+      const updated = await pb.collection('users').update(selectedMember.id, payload)
+      setMembers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
+      toast.success('Membro atualizado com sucesso!')
+      setIsEditOpen(false)
+    } catch (err) {
+      toast.error('Erro ao editar membro. Tente novamente.')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
   const roleColors: Record<string, string> = {
     master: 'bg-purple-100 text-purple-800 hover:bg-purple-100 hover:text-purple-800',
     admin: 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800',
@@ -125,7 +178,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Equipe</h1>
@@ -195,6 +248,59 @@ export default function TeamPage() {
         )}
       </div>
 
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Membro</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input
+                id="edit-name"
+                value={editData.name}
+                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editData.email}
+                onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-data-nascimento">Data de Nascimento</Label>
+              <Input
+                id="edit-data-nascimento"
+                type="date"
+                value={editData.data_nascimento}
+                onChange={(e) => setEditData({ ...editData, data_nascimento: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-foto-url">URL da Foto</Label>
+              <Input
+                id="edit-foto-url"
+                type="url"
+                value={editData.foto_url}
+                onChange={(e) => setEditData({ ...editData, foto_url: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button onClick={handleEditSave} disabled={editSubmitting}>
+              {editSubmitting ? 'Salvando...' : 'Salvar alterações'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -246,29 +352,28 @@ export default function TeamPage() {
                 </Badge>
 
                 {/* Actions overlay */}
-                {canManage && (
-                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8 rounded-full shadow-sm"
+                    title="Editar"
+                    onClick={() => handleEditClick(member)}
+                  >
+                    <Pencil className="h-4 w-4 text-slate-600" />
+                  </Button>
+                  {isMaster && member.id !== user?.id && (
                     <Button
-                      variant="secondary"
+                      variant="destructive"
                       size="icon"
                       className="h-8 w-8 rounded-full shadow-sm"
-                      title="Editar"
+                      onClick={() => handleDelete(member.id)}
+                      title="Remover"
                     >
-                      <Pencil className="h-4 w-4 text-slate-600" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                    {isMaster && member.id !== user?.id && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-8 w-8 rounded-full shadow-sm"
-                        onClick={() => handleDelete(member.id)}
-                        title="Remover"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
