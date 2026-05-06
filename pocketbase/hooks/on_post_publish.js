@@ -132,11 +132,221 @@ onRecordAfterCreateSuccess((e) => {
       url = 'https://graph.facebook.com/v19.0/me/feed'
       body = { message: fullText }
     } else if (rede === 'instagram') {
-      url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
-      body = {
-        caption: fullText,
-        image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
+      if (!hasImages) {
+        $app.logger().warn('[INSTAGRAM_NO_IMAGE]', 'post_id', post.id)
+        allSuccess = false
+        continue
       }
+
+      const imageName = Array.isArray(imagens) ? imagens[0] : imagens
+      const baseUrl =
+        $os.getenv('VITE_POCKETBASE_URL') ||
+        'https://social-content-manager-7c8af.shrd00.internal.goskip.dev'
+      const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
+
+      // Step 1: Create Media Container
+      const step1Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
+      const step1Body = {
+        image_url: realImageUrl,
+        caption: fullText,
+        access_token: token,
+      }
+
+      $app
+        .logger()
+        .info(
+          `[INSTAGRAM_STEP1_REQUEST] Sending request to ${rede}`,
+          'post_id',
+          post.id,
+          'endpoint',
+          step1Url,
+          'payload',
+          JSON.stringify(step1Body),
+        )
+      console.log('Chamando API:', step1Url, 'com dados:', step1Body)
+
+      let creationId = null
+      try {
+        const res1 = $http.send({
+          url: step1Url,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(step1Body),
+          timeout: 30,
+        })
+
+        $app
+          .logger()
+          .info(
+            `[INSTAGRAM_STEP1]`,
+            'post_id',
+            post.id,
+            'status',
+            res1.statusCode,
+            'body',
+            JSON.stringify(res1.json || {}),
+          )
+        console.log('Resposta da API (Step 1):', res1.json || {})
+
+        if (res1.statusCode >= 200 && res1.statusCode < 300 && res1.json && res1.json.id) {
+          creationId = res1.json.id
+        } else if (res1.statusCode === 401) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_401] Token expired/invalid. Action required: Reconectar',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          if (integracao) {
+            integracao.set('status', 'expirado')
+            $app.saveNoValidate(integracao)
+          }
+          allSuccess = false
+        } else if (res1.statusCode === 400) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_400] Bad Request. Action required: Check missing data (description or image)',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else if (res1.statusCode >= 500) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_500] Network-side server error. Action required: Try again later',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else {
+          allSuccess = false
+        }
+      } catch (err) {
+        $app
+          .logger()
+          .error(
+            `[API_EXCEPTION] Exception calling ${rede} step 1`,
+            'post_id',
+            post.id,
+            'error',
+            err.message,
+          )
+        console.error('Erro ao publicar step 1:', err.message, err)
+        allSuccess = false
+      }
+
+      if (!creationId) {
+        continue
+      }
+
+      // Step 2: Publish Media Container
+      const step2Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media_publish`
+      const step2Body = {
+        creation_id: creationId,
+        access_token: token,
+      }
+
+      $app
+        .logger()
+        .info(
+          `[INSTAGRAM_STEP2_REQUEST] Sending request to ${rede}`,
+          'post_id',
+          post.id,
+          'endpoint',
+          step2Url,
+          'payload',
+          JSON.stringify(step2Body),
+        )
+      console.log('Chamando API:', step2Url, 'com dados:', step2Body)
+
+      try {
+        const res2 = $http.send({
+          url: step2Url,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(step2Body),
+          timeout: 30,
+        })
+
+        $app
+          .logger()
+          .info(
+            `[INSTAGRAM_STEP2]`,
+            'post_id',
+            post.id,
+            'status',
+            res2.statusCode,
+            'body',
+            JSON.stringify(res2.json || {}),
+          )
+        console.log('Resposta da API (Step 2):', res2.json || {})
+
+        if (res2.statusCode >= 200 && res2.statusCode < 300 && res2.json && res2.json.id) {
+          post.set('id_externo_instagram', res2.json.id)
+        } else if (res2.statusCode === 401) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_401] Token expired/invalid. Action required: Reconectar',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          if (integracao) {
+            integracao.set('status', 'expirado')
+            $app.saveNoValidate(integracao)
+          }
+          allSuccess = false
+        } else if (res2.statusCode === 400) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_400] Bad Request. Action required: Check missing data (description or image)',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else if (res2.statusCode >= 500) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_500] Network-side server error. Action required: Try again later',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else {
+          allSuccess = false
+        }
+      } catch (err) {
+        $app
+          .logger()
+          .error(
+            `[API_EXCEPTION] Exception calling ${rede} step 2`,
+            'post_id',
+            post.id,
+            'error',
+            err.message,
+          )
+        console.error('Erro ao publicar step 2:', err.message, err)
+        allSuccess = false
+      }
+
+      continue
     } else if (rede === 'linkedin') {
       url = 'https://api.linkedin.com/v2/ugcPosts'
       body = {
@@ -404,11 +614,221 @@ onRecordAfterUpdateSuccess((e) => {
       url = 'https://graph.facebook.com/v19.0/me/feed'
       body = { message: fullText }
     } else if (rede === 'instagram') {
-      url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
-      body = {
-        caption: fullText,
-        image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
+      if (!hasImages) {
+        $app.logger().warn('[INSTAGRAM_NO_IMAGE]', 'post_id', post.id)
+        allSuccess = false
+        continue
       }
+
+      const imageName = Array.isArray(imagens) ? imagens[0] : imagens
+      const baseUrl =
+        $os.getenv('VITE_POCKETBASE_URL') ||
+        'https://social-content-manager-7c8af.shrd00.internal.goskip.dev'
+      const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
+
+      // Step 1: Create Media Container
+      const step1Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
+      const step1Body = {
+        image_url: realImageUrl,
+        caption: fullText,
+        access_token: token,
+      }
+
+      $app
+        .logger()
+        .info(
+          `[INSTAGRAM_STEP1_REQUEST] Sending request to ${rede}`,
+          'post_id',
+          post.id,
+          'endpoint',
+          step1Url,
+          'payload',
+          JSON.stringify(step1Body),
+        )
+      console.log('Chamando API:', step1Url, 'com dados:', step1Body)
+
+      let creationId = null
+      try {
+        const res1 = $http.send({
+          url: step1Url,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(step1Body),
+          timeout: 30,
+        })
+
+        $app
+          .logger()
+          .info(
+            `[INSTAGRAM_STEP1]`,
+            'post_id',
+            post.id,
+            'status',
+            res1.statusCode,
+            'body',
+            JSON.stringify(res1.json || {}),
+          )
+        console.log('Resposta da API (Step 1):', res1.json || {})
+
+        if (res1.statusCode >= 200 && res1.statusCode < 300 && res1.json && res1.json.id) {
+          creationId = res1.json.id
+        } else if (res1.statusCode === 401) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_401] Token expired/invalid. Action required: Reconectar',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          if (integracao) {
+            integracao.set('status', 'expirado')
+            $app.saveNoValidate(integracao)
+          }
+          allSuccess = false
+        } else if (res1.statusCode === 400) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_400] Bad Request. Action required: Check missing data (description or image)',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else if (res1.statusCode >= 500) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_500] Network-side server error. Action required: Try again later',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else {
+          allSuccess = false
+        }
+      } catch (err) {
+        $app
+          .logger()
+          .error(
+            `[API_EXCEPTION] Exception calling ${rede} step 1`,
+            'post_id',
+            post.id,
+            'error',
+            err.message,
+          )
+        console.error('Erro ao publicar step 1:', err.message, err)
+        allSuccess = false
+      }
+
+      if (!creationId) {
+        continue
+      }
+
+      // Step 2: Publish Media Container
+      const step2Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media_publish`
+      const step2Body = {
+        creation_id: creationId,
+        access_token: token,
+      }
+
+      $app
+        .logger()
+        .info(
+          `[INSTAGRAM_STEP2_REQUEST] Sending request to ${rede}`,
+          'post_id',
+          post.id,
+          'endpoint',
+          step2Url,
+          'payload',
+          JSON.stringify(step2Body),
+        )
+      console.log('Chamando API:', step2Url, 'com dados:', step2Body)
+
+      try {
+        const res2 = $http.send({
+          url: step2Url,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(step2Body),
+          timeout: 30,
+        })
+
+        $app
+          .logger()
+          .info(
+            `[INSTAGRAM_STEP2]`,
+            'post_id',
+            post.id,
+            'status',
+            res2.statusCode,
+            'body',
+            JSON.stringify(res2.json || {}),
+          )
+        console.log('Resposta da API (Step 2):', res2.json || {})
+
+        if (res2.statusCode >= 200 && res2.statusCode < 300 && res2.json && res2.json.id) {
+          post.set('id_externo_instagram', res2.json.id)
+        } else if (res2.statusCode === 401) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_401] Token expired/invalid. Action required: Reconectar',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          if (integracao) {
+            integracao.set('status', 'expirado')
+            $app.saveNoValidate(integracao)
+          }
+          allSuccess = false
+        } else if (res2.statusCode === 400) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_400] Bad Request. Action required: Check missing data (description or image)',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else if (res2.statusCode >= 500) {
+          $app
+            .logger()
+            .error(
+              '[ERROR_500] Network-side server error. Action required: Try again later',
+              'post_id',
+              post.id,
+              'rede',
+              rede,
+            )
+          allSuccess = false
+        } else {
+          allSuccess = false
+        }
+      } catch (err) {
+        $app
+          .logger()
+          .error(
+            `[API_EXCEPTION] Exception calling ${rede} step 2`,
+            'post_id',
+            post.id,
+            'error',
+            err.message,
+          )
+        console.error('Erro ao publicar step 2:', err.message, err)
+        allSuccess = false
+      }
+
+      continue
     } else if (rede === 'linkedin') {
       url = 'https://api.linkedin.com/v2/ugcPosts'
       body = {
