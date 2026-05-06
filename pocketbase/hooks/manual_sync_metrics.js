@@ -56,7 +56,7 @@ routerAdd(
 
         while (attempt < maxAttempts && !success) {
           try {
-            const url = `https://graph.facebook.com/v19.0/${net.id}/insights?metric=${metricsParam}`
+            const url = `https://graph.facebook.com/v25.0/${net.id}/insights?metric=${metricsParam}`
             const res = $http.send({
               url: url,
               method: 'GET',

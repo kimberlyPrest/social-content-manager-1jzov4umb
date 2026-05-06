@@ -38,7 +38,7 @@ routerAdd(
               continue
             }
             res = $http.send({
-              url: `https://graph.facebook.com/v19.0/search?q=${encodeURIComponent(valor)}&type=post&access_token=${token}`,
+              url: `https://graph.facebook.com/v25.0/search?q=${encodeURIComponent(valor)}&type=post&access_token=${token}`,
               method: 'GET',
               timeout: 10,
             })
@@ -64,7 +64,7 @@ routerAdd(
               continue
             }
             res = $http.send({
-              url: `https://graph.facebook.com/v19.0/ig_hashtag_search?user_id=${userId}&q=${encodeURIComponent(valor)}&access_token=${token}`,
+              url: `https://graph.facebook.com/v25.0/ig_hashtag_search?user_id=${userId}&q=${encodeURIComponent(valor)}&access_token=${token}`,
               method: 'GET',
               timeout: 10,
             })

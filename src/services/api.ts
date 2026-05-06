@@ -231,8 +231,8 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
     console.log('🔑 Token lido para', rede)
 
     let endpoint = ''
-    if (rede === 'facebook') endpoint = 'https://graph.facebook.com/v18.0/me/feed'
-    else if (rede === 'instagram') endpoint = 'https://graph.facebook.com/v18.0/me/media'
+    if (rede === 'facebook') endpoint = 'https://graph.facebook.com/v25.0/me/feed'
+    else if (rede === 'instagram') endpoint = 'https://graph.facebook.com/v25.0/me/media'
     else if (rede === 'linkedin') endpoint = 'https://api.linkedin.com/v2/ugcPosts'
     else if (rede === 'tiktok') endpoint = 'https://open.tiktokapis.com/v2/post/publish/video/init/'
 

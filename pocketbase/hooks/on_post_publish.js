@@ -129,7 +129,7 @@ onRecordAfterCreateSuccess((e) => {
     const fullText = `${titulo}\n\n${conteudo || ''}`.trim()
 
     if (rede === 'facebook') {
-      url = 'https://graph.facebook.com/v19.0/me/feed'
+      url = 'https://graph.facebook.com/v25.0/me/feed'
       body = { message: fullText }
     } else if (rede === 'instagram') {
       if (!hasImages) {
@@ -145,7 +145,7 @@ onRecordAfterCreateSuccess((e) => {
       const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
-      const step1Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
+      const step1Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media`
       const step1Body = {
         image_url: realImageUrl,
         caption: fullText,
@@ -249,7 +249,7 @@ onRecordAfterCreateSuccess((e) => {
       }
 
       // Step 2: Publish Media Container
-      const step2Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media_publish`
+      const step2Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media_publish`
       const step2Body = {
         creation_id: creationId,
         access_token: token,
@@ -611,7 +611,7 @@ onRecordAfterUpdateSuccess((e) => {
     const fullText = `${titulo}\n\n${conteudo || ''}`.trim()
 
     if (rede === 'facebook') {
-      url = 'https://graph.facebook.com/v19.0/me/feed'
+      url = 'https://graph.facebook.com/v25.0/me/feed'
       body = { message: fullText }
     } else if (rede === 'instagram') {
       if (!hasImages) {
@@ -627,7 +627,7 @@ onRecordAfterUpdateSuccess((e) => {
       const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
-      const step1Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
+      const step1Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media`
       const step1Body = {
         image_url: realImageUrl,
         caption: fullText,
@@ -731,7 +731,7 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       // Step 2: Publish Media Container
-      const step2Url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media_publish`
+      const step2Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media_publish`
       const step2Body = {
         creation_id: creationId,
         access_token: token,

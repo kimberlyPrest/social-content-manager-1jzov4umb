@@ -20,7 +20,7 @@ routerAdd(
     }
 
     const maskedToken = token.length > 6 ? token.substring(0, 6) + '...' : '******'
-    const url = `https://graph.facebook.com/v19.0/${igId}?fields=id,username&access_token=${token}`
+    const url = `https://graph.facebook.com/v25.0/${igId}?fields=id,username&access_token=${token}`
 
     let res
     try {
