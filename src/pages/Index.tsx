@@ -396,7 +396,14 @@ export default function Index() {
                       <TableCell>{new Date(post.created).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell className="text-right pr-6">
                         <Button variant="ghost" size="icon" asChild>
-                          <Link to={`/posts/${post.id}/edit`}>
+                          <Link
+                            to={`/posts/${post.id}/edit`}
+                            onClick={() =>
+                              console.log(
+                                `[Bug Scanner] Action: Clicou em Editar, PostID: ${post.id}, Timestamp: ${new Date().toISOString()}`,
+                              )
+                            }
+                          >
                             <Pencil className="h-4 w-4" />
                           </Link>
                         </Button>

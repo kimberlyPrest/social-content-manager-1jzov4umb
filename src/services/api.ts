@@ -117,8 +117,34 @@ export const deletePost = async (id: string) => {
   return pb.send(`/backend/v1/posts/${id}`, { method: 'DELETE' })
 }
 
+export const getPost = async (id: string) => {
+  return pb.collection('posts').getOne(id, { expand: 'criador_id' })
+}
+
 export const updatePost = async (id: string, data: any) => {
   return pb.collection('posts').update(id, data)
+}
+
+export const updatePostWithFiles = async (id: string, data: any, files: File[]) => {
+  const formData = new FormData()
+
+  for (const key in data) {
+    if (data[key] !== undefined && data[key] !== null) {
+      if (key === 'redes_sociais') {
+        formData.append(key, JSON.stringify(data[key]))
+      } else if (data[key] instanceof Date) {
+        formData.append(key, data[key].toISOString())
+      } else {
+        formData.append(key, String(data[key]))
+      }
+    }
+  }
+
+  files.forEach((file) => {
+    formData.append('imagens', file)
+  })
+
+  return pb.collection('posts').update(id, formData)
 }
 
 export const createPost = async (data: any) => {

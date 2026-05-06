@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-import { createPostWithFiles } from '@/services/api'
+import { createPostWithFiles, getPost, updatePostWithFiles } from '@/services/api'
+import pb from '@/lib/pocketbase/client'
 import { SocialPreviews } from '@/components/SocialPreviews'
 import { cn } from '@/lib/utils'
 
@@ -55,12 +56,16 @@ const formSchema = z
 
 export default function CreatePost() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const isEditMode = !!id
   const { user } = useAuth()
 
   const [files, setFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [submitAction, setSubmitAction] = useState<'draft' | 'publish'>('draft')
+  const [loadingPost, setLoadingPost] = useState(isEditMode)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -84,6 +89,44 @@ export default function CreatePost() {
       navigate('/dashboard')
     }
   }, [user, navigate])
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      console.log(
+        `[Bug Scanner] Action: Editar Post, PostID: ${id}, Timestamp: ${new Date().toISOString()}`,
+      )
+      getPost(id)
+        .then((post) => {
+          console.log(`[Bug Scanner] Data fetched for PostID: ${id}`, post)
+          let localDateStr = ''
+          if (post.agendado_para) {
+            const d = new Date(post.agendado_para)
+            if (!isNaN(d.getTime())) {
+              const localDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+              localDateStr = localDate.toISOString().substring(0, 16)
+            }
+          }
+          form.reset({
+            titulo: post.titulo || '',
+            conteudo: post.conteudo || '',
+            redes_sociais: post.redes_sociais || [],
+            agendar: post.status === 'agendado' && localDateStr ? 'later' : 'now',
+            agendado_para: localDateStr,
+          })
+          if (post.imagens) {
+            const imagesArray = Array.isArray(post.imagens) ? post.imagens : [post.imagens]
+            const urls = imagesArray.map((img: string) => pb.files.getUrl(post, img))
+            setExistingImages(urls)
+          }
+        })
+        .catch((err) => {
+          console.error(`[Bug Scanner] Error fetching PostID: ${id}`, err)
+          toast.error('Erro ao carregar post para edição.')
+          navigate('/dashboard')
+        })
+        .finally(() => setLoadingPost(false))
+    }
+  }, [id, isEditMode, navigate, form])
 
   useEffect(() => {
     const urls = files.map((file) => URL.createObjectURL(file))
@@ -130,21 +173,37 @@ export default function CreatePost() {
           values.agendar === 'later' ? new Date(values.agendado_para!).toISOString() : null,
       }
 
-      await createPostWithFiles(payload, files)
-
-      if (status === 'rascunho') toast.success('Post salvo como rascunho!')
-      else if (status === 'agendado')
-        toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
-      else toast.success('Post publicado com sucesso!')
-
-      setTimeout(() => navigate('/dashboard'), 2000)
+      if (isEditMode && id) {
+        const response = await updatePostWithFiles(id, payload, files)
+        console.log(`[Bug Scanner] API Response (Update):`, response)
+        toast.success('Post atualizado com sucesso!')
+        navigate('/')
+      } else {
+        await createPostWithFiles(payload, files)
+        if (status === 'rascunho') toast.success('Post salvo como rascunho!')
+        else if (status === 'agendado')
+          toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
+        else toast.success('Post publicado com sucesso!')
+        setTimeout(() => navigate('/dashboard'), 2000)
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao salvar post. Tente novamente.')
     }
   }
 
   const isSubmitDisabled =
-    form.formState.isSubmitting || watchConteudo.length === 0 || watchRedes.length === 0
+    form.formState.isSubmitting ||
+    watchConteudo.length === 0 ||
+    watchRedes.length === 0 ||
+    loadingPost
+
+  if (loadingPost) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
@@ -155,9 +214,13 @@ export default function CreatePost() {
           </Button>
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-purple-950 dark:text-purple-100">
-              Criar Post
+              {isEditMode ? 'Editar Post' : 'Criar Post'}
             </h2>
-            <p className="text-muted-foreground">Crie, visualize e agende seu conteúdo.</p>
+            <p className="text-muted-foreground">
+              {isEditMode
+                ? 'Atualize as informações do seu post.'
+                : 'Crie, visualize e agende seu conteúdo.'}
+            </p>
           </div>
         </div>
       </div>
@@ -291,8 +354,20 @@ export default function CreatePost() {
                       </p>
                     </div>
 
-                    {previewUrls.length > 0 && (
+                    {(previewUrls.length > 0 || existingImages.length > 0) && (
                       <div className="flex flex-wrap gap-4 mt-4">
+                        {existingImages.map((url) => (
+                          <div
+                            key={url}
+                            className="relative group w-24 h-24 rounded-lg overflow-hidden border shadow-sm"
+                          >
+                            <img
+                              src={url}
+                              alt="existing preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
                         {previewUrls.map((url, i) => (
                           <div
                             key={url}
@@ -308,7 +383,7 @@ export default function CreatePost() {
                             </button>
                           </div>
                         ))}
-                        {files.length < 5 && (
+                        {files.length + existingImages.length < 5 && (
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
@@ -397,7 +472,11 @@ export default function CreatePost() {
                       {form.formState.isSubmitting && submitAction === 'publish' ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : null}
-                      {watchAgendar === 'later' ? 'Agendar' : 'Publicar agora'}
+                      {isEditMode
+                        ? 'Salvar'
+                        : watchAgendar === 'later'
+                          ? 'Agendar'
+                          : 'Publicar agora'}
                     </Button>
                   </div>
                 </CardContent>
@@ -417,7 +496,7 @@ export default function CreatePost() {
                 networks={watchRedes}
                 content={watchConteudo}
                 title={form.watch('titulo')}
-                images={previewUrls}
+                images={[...existingImages, ...previewUrls]}
                 companyName={user?.expand?.empresa_id?.nome || 'Supremo Aroma'}
               />
             </CardContent>
