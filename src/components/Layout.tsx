@@ -10,6 +10,7 @@ import {
   Users,
   PenTool,
   Workflow,
+  Webhook,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -74,6 +75,13 @@ const navItems = [
     path: '/automations',
     colorClass: 'text-[#06B6D4]',
     bgActive: 'data-[active=true]:bg-[#06B6D4]/10',
+  },
+  {
+    title: 'Webhooks',
+    icon: Webhook,
+    path: '/webhooks',
+    colorClass: 'text-[#8B5CF6]',
+    bgActive: 'data-[active=true]:bg-[#8B5CF6]/10',
   },
   {
     title: 'Equipe',

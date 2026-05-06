@@ -19,6 +19,7 @@ import NotFound from './pages/NotFound'
 import SettingsPage from './pages/Settings'
 import TeamPage from './pages/Team'
 import AutomationsPage from './pages/Automations'
+import WebhooksPage from './pages/Webhooks'
 import { Navigate } from 'react-router-dom'
 
 const App = () => (
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/posts/:id/edit" element={<CreatePost />} />
               <Route path="/ab-tests" element={<ABTests />} />
               <Route path="/automations" element={<AutomationsPage />} />
+              <Route path="/webhooks" element={<WebhooksPage />} />
               <Route path="/monitor" element={<Monitor />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/notifications" element={<NotificationsPage />} />
