@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { FileText, MessageSquare, SplitSquareHorizontal, Users, Filter, Clock } from 'lucide-react'
+import {
+  FileText,
+  MessageSquare,
+  SplitSquareHorizontal,
+  Users,
+  Filter,
+  Clock,
+  Eye,
+} from 'lucide-react'
+import { PostPreviewDialog } from '@/components/PostPreviewDialog'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +32,16 @@ const TYPE_ICONS: Record<string, any> = {
   default: { icon: FileText, color: 'text-gray-500', bg: 'bg-gray-500/10' },
 }
 
+const POST_TYPES = [
+  'post_criado',
+  'post_editado',
+  'post_agendado',
+  'post_publicado',
+  'aprovacao_solicitada',
+  'post_aprovado',
+  'post_rejeitado',
+]
+
 const getCategory = (tipo: string) => {
   if (tipo.includes('post') && !tipo.includes('aprovado') && !tipo.includes('rejeitado'))
     return 'post'
@@ -39,6 +59,9 @@ export default function ActivityPage() {
   const [userFilter, setUserFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [timeFilter, setTimeFilter] = useState('all')
+
+  const [previewPostId, setPreviewPostId] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const loadData = async () => {
     try {
@@ -174,6 +197,20 @@ export default function ActivityPage() {
                               >
                                 {cat}
                               </Badge>
+                              {POST_TYPES.includes(act.tipo) && act.referencia_id && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-5 px-2 text-[10px]"
+                                  onClick={() => {
+                                    setPreviewPostId(act.referencia_id)
+                                    setPreviewOpen(true)
+                                  }}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Ver post
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -192,6 +229,8 @@ export default function ActivityPage() {
           </div>
         </CardContent>
       </Card>
+
+      <PostPreviewDialog postId={previewPostId} open={previewOpen} onOpenChange={setPreviewOpen} />
     </div>
   )
 }

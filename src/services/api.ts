@@ -121,6 +121,12 @@ export const getPost = async (id: string) => {
   return pb.collection('posts').getOne(id, { expand: 'criador_id' })
 }
 
+export const getPostMetrics = async (postId: string) => {
+  return pb.collection('metrics_posts').getFullList({
+    filter: `post_id = "${postId}"`,
+  })
+}
+
 export const updatePost = async (id: string, data: any) => {
   return pb.collection('posts').update(id, data)
 }
