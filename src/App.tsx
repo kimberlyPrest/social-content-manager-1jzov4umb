@@ -17,6 +17,7 @@ import NotificationsPage from './pages/Notifications'
 import ActivityPage from './pages/Activity'
 import NotFound from './pages/NotFound'
 import SettingsPage from './pages/Settings'
+import TeamPage from './pages/Team'
 import { Navigate } from 'react-router-dom'
 
 const App = () => (
@@ -40,12 +41,7 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/activity" element={<ActivityPage />} />
-              <Route
-                path="/team"
-                element={
-                  <div className="p-8 text-center text-muted-foreground">Equipe em breve...</div>
-                }
-              />
+              <Route path="/team" element={<TeamPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
