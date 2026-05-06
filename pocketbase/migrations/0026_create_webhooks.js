@@ -1,5 +1,12 @@
 migrate(
   (app) => {
+    let empresaColId = ''
+    try {
+      empresaColId = app.findCollectionByNameOrId('empresas').id
+    } catch (_) {
+      empresaColId = app.findCollectionByNameOrId('companies').id
+    }
+
     const webhooks = new Collection({
       name: 'webhooks',
       type: 'base',
@@ -13,7 +20,7 @@ migrate(
           name: 'empresa_id',
           type: 'relation',
           required: true,
-          collectionId: 'companies',
+          collectionId: empresaColId,
           cascadeDelete: true,
           maxSelect: 1,
         },

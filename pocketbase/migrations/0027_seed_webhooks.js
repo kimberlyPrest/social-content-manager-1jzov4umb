@@ -1,6 +1,13 @@
 migrate(
   (app) => {
-    const supremo = app.findFirstRecordByData('companies', 'nome', 'Supremo Aroma')
+    let supremo
+    try {
+      supremo = app.findFirstRecordByData('empresas', 'nome', 'Supremo Aroma')
+    } catch (_) {
+      try {
+        supremo = app.findFirstRecordByData('companies', 'nome', 'Supremo Aroma')
+      } catch (_) {}
+    }
     if (!supremo) return
 
     try {
