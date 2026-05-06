@@ -1,5 +1,7 @@
 migrate(
   (app) => {
+    const companiesId = app.findCollectionByNameOrId('companies').id
+
     const backups = new Collection({
       name: 'backups',
       type: 'base',
@@ -13,7 +15,7 @@ migrate(
           name: 'empresa_id',
           type: 'relation',
           required: true,
-          collectionId: 'companies',
+          collectionId: companiesId,
           maxSelect: 1,
         },
         {
@@ -45,7 +47,7 @@ migrate(
           name: 'empresa_id',
           type: 'relation',
           required: true,
-          collectionId: 'companies',
+          collectionId: companiesId,
           maxSelect: 1,
         },
         { name: 'ativo', type: 'bool' },

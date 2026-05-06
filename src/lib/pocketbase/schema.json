@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T01:23:34.428Z",
+  "generatedAt": "2026-05-06T01:27:41.931Z",
   "collections": [
     {
       "name": "users",
@@ -1273,6 +1273,121 @@
         },
         {
           "name": "resposta",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "backups",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": "empresa_id = @request.auth.empresa_id"
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["manual", "automatico"]
+        },
+        {
+          "name": "arquivo_url",
+          "type": "file",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "tamanho",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["sucesso", "falha"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "configuracao_backup",
+      "type": "base",
+      "apiRules": {
+        "list": "empresa_id = @request.auth.empresa_id",
+        "view": "empresa_id = @request.auth.empresa_id",
+        "create": "empresa_id = @request.auth.empresa_id",
+        "update": "empresa_id = @request.auth.empresa_id",
+        "delete": "empresa_id = @request.auth.empresa_id"
+      },
+      "fields": [
+        {
+          "name": "empresa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "companies"
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "frequencia",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["diaria", "semanal", "mensal"]
+        },
+        {
+          "name": "horario",
           "type": "text",
           "required": false,
           "system": false
