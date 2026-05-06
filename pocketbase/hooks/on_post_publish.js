@@ -58,12 +58,30 @@ onRecordAfterCreateSuccess((e) => {
       .logger()
       .info(`[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`, 'post_id', post.id)
 
+    let instagramBusinessId = ''
+    if (rede === 'instagram') {
+      instagramBusinessId = $secrets.get('INSTAGRAM_ID')
+      if (!instagramBusinessId) {
+        $app
+          .logger()
+          .error(
+            `[INSTAGRAM_CONFIG_ERROR] Missing INSTAGRAM_ID secret`,
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
+        allSuccess = false
+        continue
+      }
+    }
+
     let token = integracao ? integracao.getString('access_token') : ''
     let tokenSecretKey = ''
 
     if (!token) {
       if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
-      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
+      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_API_KEY'
       else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
       else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
@@ -114,7 +132,7 @@ onRecordAfterCreateSuccess((e) => {
       url = 'https://graph.facebook.com/v19.0/me/feed'
       body = { message: fullText }
     } else if (rede === 'instagram') {
-      url = 'https://graph.facebook.com/v19.0/me/media'
+      url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
       body = {
         caption: fullText,
         image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
@@ -312,12 +330,30 @@ onRecordAfterUpdateSuccess((e) => {
       .logger()
       .info(`[TOKEN_RETRIEVAL] Attempting to retrieve token for ${rede}`, 'post_id', post.id)
 
+    let instagramBusinessId = ''
+    if (rede === 'instagram') {
+      instagramBusinessId = $secrets.get('INSTAGRAM_ID')
+      if (!instagramBusinessId) {
+        $app
+          .logger()
+          .error(
+            `[INSTAGRAM_CONFIG_ERROR] Missing INSTAGRAM_ID secret`,
+            'post_id',
+            post.id,
+            'rede',
+            rede,
+          )
+        allSuccess = false
+        continue
+      }
+    }
+
     let token = integracao ? integracao.getString('access_token') : ''
     let tokenSecretKey = ''
 
     if (!token) {
       if (rede === 'facebook') tokenSecretKey = 'FACEBOOK_ACCESS_TOKEN'
-      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_ACCESS_TOKEN'
+      else if (rede === 'instagram') tokenSecretKey = 'INSTAGRAM_API_KEY'
       else if (rede === 'linkedin') tokenSecretKey = 'LINKEDIN_ACCESS_TOKEN'
       else if (rede === 'tiktok') tokenSecretKey = 'TIKTOK_ACCESS_TOKEN'
 
@@ -368,7 +404,7 @@ onRecordAfterUpdateSuccess((e) => {
       url = 'https://graph.facebook.com/v19.0/me/feed'
       body = { message: fullText }
     } else if (rede === 'instagram') {
-      url = 'https://graph.facebook.com/v19.0/me/media'
+      url = `https://graph.facebook.com/v19.0/${instagramBusinessId}/media`
       body = {
         caption: fullText,
         image_url: imageUrl || 'https://img.usecurling.com/p/800/800?q=post',
