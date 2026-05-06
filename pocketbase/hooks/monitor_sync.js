@@ -56,7 +56,7 @@ routerAdd(
               compartilhamentos: 0,
             }))
           } else if (rede === 'instagram') {
-            const token = $secrets.get('INSTAGRAM_ACCESS_TOKEN')
+            const token = $secrets.get('INSTAGRAM_API_KEY')
             const userId = $secrets.get('INSTAGRAM_ID') || 'me'
             if (!token) {
               hasError = true

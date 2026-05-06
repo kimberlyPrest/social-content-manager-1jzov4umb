@@ -30,7 +30,7 @@ cronAdd('sync_metrics', '0 * * * *', () => {
       if (!token) {
         token =
           $secrets.get('FACEBOOK_ACCESS_TOKEN') ||
-          $secrets.get('INSTAGRAM_ACCESS_TOKEN') ||
+          $secrets.get('INSTAGRAM_API_KEY') ||
           'dummy_token'
       }
 
