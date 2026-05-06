@@ -6,6 +6,7 @@ import {
   deleteIntegracao,
   IntegracaoRede,
 } from '@/services/integracao_redes'
+import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Button } from '@/components/ui/button'
@@ -78,6 +79,59 @@ export default function Integrations() {
   const [disconnectModalOpen, setDisconnectModalOpen] = useState(false)
   const [selectedRede, setSelectedRede] = useState<any>(null)
   const [isAuthorizing, setIsAuthorizing] = useState(false)
+  const [testingInsta, setTestingInsta] = useState(false)
+
+  const handleInstagramTest = async (rede: any) => {
+    if (!user?.empresa_id) return
+    setTestingInsta(true)
+    try {
+      const res = await pb.send('/backend/v1/instagram/test', { method: 'POST' })
+
+      toast.success(`Conexão validada com sucesso! Conta conectada: @${res.username}`)
+
+      const existing = integracoes.find((i) => i.rede_social === rede.id)
+      const expDate = new Date()
+      expDate.setDate(expDate.getDate() + 60)
+      const payload = {
+        status: 'conectado' as const,
+        access_token: 'instagram_api_key_valid',
+        data_expiracao: expDate.toISOString(),
+      }
+
+      const dbRes = existing
+        ? await updateIntegracao(existing.id, payload)
+        : await createIntegracao({
+            empresa_id: user.empresa_id,
+            rede_social: rede.id,
+            ...payload,
+          })
+
+      setIntegracoes((prev) =>
+        existing ? prev.map((i) => (i.id === dbRes.id ? dbRes : i)) : [...prev, dbRes],
+      )
+    } catch (err: any) {
+      const status = err.status
+      const body = err.response || {}
+      const motivo = body.motivo || ''
+
+      if (status === 400 && motivo.includes('ausente')) {
+        const secretName = motivo.includes('INSTAGRAM_API_KEY')
+          ? 'INSTAGRAM_API_KEY'
+          : 'INSTAGRAM_ID'
+        toast.error(`Erro de configuração: ${secretName} não encontrado nos Secrets.`)
+      } else if (status === 400) {
+        toast.error(
+          'ID inválido: Certifique-se de que o ID pertence a uma conta Instagram Business.',
+        )
+      } else if (status === 401 || body.resposta?.error?.code === 190) {
+        toast.error('Token inválido ou expirado: Verifique o INSTAGRAM_API_KEY.')
+      } else {
+        toast.error('Falha ao validar conexão.')
+      }
+    } finally {
+      setTestingInsta(false)
+    }
+  }
 
   const loadData = useCallback(() => {
     setLoading(true)
@@ -265,9 +319,16 @@ export default function Integrations() {
                     ) : (
                       <Button
                         style={{ backgroundColor: rede.color, color: '#fff' }}
-                        onClick={() => openConnect(rede)}
+                        onClick={() =>
+                          rede.id === 'instagram' ? handleInstagramTest(rede) : openConnect(rede)
+                        }
+                        disabled={rede.id === 'instagram' && testingInsta}
                       >
-                        {isExp ? 'Reconectar' : 'Conectar'}
+                        {rede.id === 'instagram' && testingInsta
+                          ? 'Testando...'
+                          : isExp
+                            ? 'Reconectar'
+                            : 'Conectar'}
                       </Button>
                     )}
                   </CardFooter>
