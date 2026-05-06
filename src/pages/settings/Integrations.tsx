@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   getIntegracoes,
   createIntegracao,
@@ -6,6 +6,7 @@ import {
   IntegracaoRede,
 } from '@/services/integracao_redes'
 import { useAuth } from '@/hooks/use-auth'
+import { useRealtime } from '@/hooks/use-realtime'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -77,7 +78,7 @@ export default function Integrations() {
   const [selectedRede, setSelectedRede] = useState<any>(null)
   const [isAuthorizing, setIsAuthorizing] = useState(false)
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     setLoading(true)
     setError(false)
     getIntegracoes()
@@ -103,17 +104,22 @@ export default function Integrations() {
       .finally(() => {
         setLoading(false)
       })
-  }
+  }, [])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
+
+  useRealtime('integracao_redes', () => {
+    getIntegracoes()
+      .then((data) => setIntegracoes(data))
+      .catch(() => {})
+  })
 
   const handleConnect = async () => {
     if (!selectedRede || !user?.empresa_id) return
     setIsAuthorizing(true)
 
-    // Simulate OAuth flow wait
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
     try {
@@ -152,7 +158,7 @@ export default function Integrations() {
     const existing = integracoes.find((i) => i.rede_social === selectedRede?.id)
     if (!existing) return
     try {
-      const res = await updateIntegracao(existing.id, { status: 'desconectado' })
+      const res = await updateIntegracao(existing.id, { status: 'desconectado', access_token: '' })
       setIntegracoes((prev) => prev.map((i) => (i.id === res.id ? res : i)))
       toast.success(`${selectedRede.name} desconectado.`)
       setDisconnectModalOpen(false)
@@ -204,7 +210,7 @@ export default function Integrations() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {loading
+        {loading && integracoes.length === 0
           ? Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-[180px] rounded-xl" />
             ))

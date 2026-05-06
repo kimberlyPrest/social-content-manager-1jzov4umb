@@ -9,8 +9,7 @@ import {
   PieChart,
   Users,
   PenTool,
-  Workflow,
-  Webhook,
+  Share2,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -27,76 +26,15 @@ import { Header } from './Header'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  {
-    title: 'Dashboard',
-    icon: LayoutDashboard,
-    path: '/',
-    colorClass: 'text-[#3B82F6]',
-    bgActive: 'data-[active=true]:bg-[#3B82F6]/10',
-  },
-  {
-    title: 'Posts',
-    icon: FileText,
-    path: '/posts',
-    colorClass: 'text-[#EC4899]',
-    bgActive: 'data-[active=true]:bg-[#EC4899]/10',
-  },
-  {
-    title: 'Criador',
-    icon: PenTool,
-    path: '/activity',
-    colorClass: 'text-[#A855F7]',
-    bgActive: 'data-[active=true]:bg-[#A855F7]/10',
-  },
-  {
-    title: 'Monitoramento',
-    icon: Activity,
-    path: '/monitor',
-    colorClass: 'text-[#EF4444]',
-    bgActive: 'data-[active=true]:bg-[#EF4444]/10',
-  },
-  {
-    title: 'Relatórios',
-    icon: PieChart,
-    path: '/reports',
-    colorClass: 'text-[#10B981]',
-    bgActive: 'data-[active=true]:bg-[#10B981]/10',
-  },
-  {
-    title: 'Testes A/B',
-    icon: SplitSquareHorizontal,
-    path: '/ab-tests',
-    colorClass: 'text-[#F97316]',
-    bgActive: 'data-[active=true]:bg-[#F97316]/10',
-  },
-  {
-    title: 'Automações',
-    icon: Workflow,
-    path: '/automations',
-    colorClass: 'text-[#06B6D4]',
-    bgActive: 'data-[active=true]:bg-[#06B6D4]/10',
-  },
-  {
-    title: 'Webhooks',
-    icon: Webhook,
-    path: '/webhooks',
-    colorClass: 'text-[#8B5CF6]',
-    bgActive: 'data-[active=true]:bg-[#8B5CF6]/10',
-  },
-  {
-    title: 'Equipe',
-    icon: Users,
-    path: '/team',
-    colorClass: 'text-[#FBBF24]',
-    bgActive: 'data-[active=true]:bg-[#FBBF24]/10',
-  },
-  {
-    title: 'Configurações',
-    icon: Settings,
-    path: '/settings',
-    colorClass: 'text-[#6B7280]',
-    bgActive: 'data-[active=true]:bg-[#6B7280]/10',
-  },
+  { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: '#3B82F6' },
+  { title: 'Posts', icon: FileText, path: '/posts', color: '#EC4899' },
+  { title: 'Criador', icon: PenTool, path: '/activity', color: '#A855F7' },
+  { title: 'Monitoramento', icon: Activity, path: '/monitor', color: '#EF4444' },
+  { title: 'Relatórios', icon: PieChart, path: '/reports', color: '#10B981' },
+  { title: 'Testes A/B', icon: SplitSquareHorizontal, path: '/ab-tests', color: '#F97316' },
+  { title: 'Integrações', icon: Share2, path: '/integracoes', color: '#06B6D4' },
+  { title: 'Equipe', icon: Users, path: '/team', color: '#FBBF24' },
+  { title: 'Configurações', icon: Settings, path: '/settings', color: '#6B7280' },
 ]
 
 export default function Layout() {
@@ -128,7 +66,9 @@ export default function Layout() {
             {navItems.map((item) => {
               const isActive =
                 location.pathname === item.path ||
-                (item.path !== '/' && location.pathname.startsWith(item.path))
+                (item.path !== '/' &&
+                  item.path !== '/dashboard' &&
+                  location.pathname.startsWith(item.path))
               return (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
@@ -136,19 +76,24 @@ export default function Layout() {
                     tooltip={item.title}
                     isActive={isActive}
                     className={cn(
-                      'group transition-all duration-200 text-[#F3F4F6] hover:bg-white/10 hover:text-[#F3F4F6] mb-1',
-                      'h-11 group-data-[collapsible=icon]:!size-11 [&>svg]:!size-6',
-                      item.bgActive,
-                      isActive && 'font-semibold',
+                      'group transition-all duration-200 text-[#F3F4F6] hover:text-[#F3F4F6] mb-1',
+                      'h-11 group-data-[collapsible=icon]:!size-11 [&>svg]:!size-6 hover:bg-[var(--hover-bg)]',
+                      isActive ? 'bg-[var(--hover-bg)] font-semibold' : 'bg-transparent',
                     )}
+                    style={
+                      {
+                        '--item-color': item.color,
+                        '--hover-bg': `${item.color}1A`,
+                      } as React.CSSProperties
+                    }
                   >
-                    <Link to={item.path} className="flex items-center gap-3">
+                    <Link to={item.path} className="flex items-center gap-3 w-full">
                       <item.icon
                         className={cn(
-                          'h-6 w-6 shrink-0 transition-all duration-200 group-hover:brightness-[1.20]',
-                          item.colorClass,
-                          isActive ? 'saturate-100' : '',
+                          'h-6 w-6 shrink-0 transition-all duration-200 group-hover:brightness-[1.25] group-hover:opacity-100',
+                          isActive ? 'brightness-[1.25] opacity-100' : 'opacity-80',
                         )}
+                        style={{ color: 'var(--item-color)' }}
                       />
                       <span className="text-base truncate group-data-[collapsible=icon]:hidden">
                         {item.title}

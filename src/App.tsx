@@ -20,6 +20,7 @@ import SettingsPage from './pages/Settings'
 import TeamPage from './pages/Team'
 import AutomationsPage from './pages/Automations'
 import WebhooksPage from './pages/Webhooks'
+import Integrations from './pages/settings/Integrations'
 import { Navigate } from 'react-router-dom'
 
 const App = () => (
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/activity" element={<ActivityPage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/integracoes" element={<Integrations />} />
             </Route>
           </Route>
 
