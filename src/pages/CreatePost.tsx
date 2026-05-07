@@ -433,7 +433,7 @@ export default function CreatePost() {
                         ref={fileInputRef}
                         className="hidden"
                         multiple
-                        accept="image/*"
+                        accept="image/png, image/jpeg, image/webp"
                         onChange={(e) => {
                           if (e.target.files) handleFiles(Array.from(e.target.files))
                         }}
