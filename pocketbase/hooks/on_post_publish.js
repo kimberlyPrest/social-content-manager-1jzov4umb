@@ -283,6 +283,111 @@ onRecordAfterCreateSuccess((e) => {
         continue
       }
 
+      // Step 1.5: Poll for container status
+      let isFinished = false
+      let isPublished = false
+      let hasError = false
+
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        $app
+          .logger()
+          .info(
+            `[INSTAGRAM_POLL] Waiting 60 seconds before checking container status. Attempt ${attempt}/5`,
+            'post_id',
+            post.id,
+          )
+        console.log(
+          `[INSTAGRAM_POLL] Aguardando 60s para checar status do container (Tentativa ${attempt}/5)...`,
+        )
+
+        const startWait = Date.now()
+        try {
+          $http.send({ url: 'http://192.0.2.1:81', timeout: 60 })
+        } catch (err) {}
+        while (Date.now() - startWait < 60000) {}
+
+        const statusUrl = `https://graph.facebook.com/v25.0/${creationId}?fields=status_code&access_token=${token}`
+        try {
+          const statusRes = $http.send({
+            url: statusUrl,
+            method: 'GET',
+            timeout: 30,
+          })
+
+          if (statusRes.statusCode >= 200 && statusRes.statusCode < 300 && statusRes.json) {
+            const statusCode = statusRes.json.status_code
+            $app
+              .logger()
+              .info(`[INSTAGRAM_STATUS] Container status: ${statusCode}`, 'post_id', post.id)
+            console.log(`Status do container: ${statusCode}`)
+
+            if (statusCode === 'FINISHED') {
+              isFinished = true
+              break
+            } else if (statusCode === 'PUBLISHED') {
+              isPublished = true
+              break
+            } else if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
+              hasError = true
+              break
+            } else if (statusCode === 'IN_PROGRESS') {
+              // continues the loop
+            }
+          } else {
+            $app
+              .logger()
+              .warn(
+                `[INSTAGRAM_STATUS_FAIL] Unexpected status code or empty body`,
+                'post_id',
+                post.id,
+                'status',
+                statusRes.statusCode,
+              )
+          }
+        } catch (err) {
+          $app
+            .logger()
+            .warn(
+              `[INSTAGRAM_STATUS_EXCEPTION] Error checking status`,
+              'post_id',
+              post.id,
+              'error',
+              err.message,
+            )
+        }
+      }
+
+      if (isPublished) {
+        post.set('id_externo_instagram', creationId)
+        continue
+      }
+
+      if (hasError || !isFinished) {
+        $app
+          .logger()
+          .error(
+            `[INSTAGRAM_POLL_FAIL] Container did not finish processing in time or failed`,
+            'post_id',
+            post.id,
+          )
+        console.log(`[INSTAGRAM_POLL_FAIL] Container não processou a tempo ou deu erro.`)
+        try {
+          const atividades = $app.findCollectionByNameOrId('atividades')
+          const record = new Record(atividades)
+          record.set('empresa_id', post.getString('empresa_id'))
+          record.set('usuario_id', post.getString('criador_id'))
+          record.set('tipo', 'post_rejeitado')
+          record.set(
+            'descricao',
+            `Falha ao publicar no Instagram. O container de mídia não ficou pronto após 5 minutos ou apresentou erro.`,
+          )
+          record.set('referencia_id', post.id)
+          $app.saveNoValidate(record)
+        } catch (err) {}
+        allSuccess = false
+        continue
+      }
+
       // Step 2: Publish Media Container
       const step2Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media_publish`
       const step2Body = {
@@ -825,6 +930,111 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       if (!creationId) {
+        continue
+      }
+
+      // Step 1.5: Poll for container status
+      let isFinished = false
+      let isPublished = false
+      let hasError = false
+
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        $app
+          .logger()
+          .info(
+            `[INSTAGRAM_POLL] Waiting 60 seconds before checking container status. Attempt ${attempt}/5`,
+            'post_id',
+            post.id,
+          )
+        console.log(
+          `[INSTAGRAM_POLL] Aguardando 60s para checar status do container (Tentativa ${attempt}/5)...`,
+        )
+
+        const startWait = Date.now()
+        try {
+          $http.send({ url: 'http://192.0.2.1:81', timeout: 60 })
+        } catch (err) {}
+        while (Date.now() - startWait < 60000) {}
+
+        const statusUrl = `https://graph.facebook.com/v25.0/${creationId}?fields=status_code&access_token=${token}`
+        try {
+          const statusRes = $http.send({
+            url: statusUrl,
+            method: 'GET',
+            timeout: 30,
+          })
+
+          if (statusRes.statusCode >= 200 && statusRes.statusCode < 300 && statusRes.json) {
+            const statusCode = statusRes.json.status_code
+            $app
+              .logger()
+              .info(`[INSTAGRAM_STATUS] Container status: ${statusCode}`, 'post_id', post.id)
+            console.log(`Status do container: ${statusCode}`)
+
+            if (statusCode === 'FINISHED') {
+              isFinished = true
+              break
+            } else if (statusCode === 'PUBLISHED') {
+              isPublished = true
+              break
+            } else if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
+              hasError = true
+              break
+            } else if (statusCode === 'IN_PROGRESS') {
+              // continues the loop
+            }
+          } else {
+            $app
+              .logger()
+              .warn(
+                `[INSTAGRAM_STATUS_FAIL] Unexpected status code or empty body`,
+                'post_id',
+                post.id,
+                'status',
+                statusRes.statusCode,
+              )
+          }
+        } catch (err) {
+          $app
+            .logger()
+            .warn(
+              `[INSTAGRAM_STATUS_EXCEPTION] Error checking status`,
+              'post_id',
+              post.id,
+              'error',
+              err.message,
+            )
+        }
+      }
+
+      if (isPublished) {
+        post.set('id_externo_instagram', creationId)
+        continue
+      }
+
+      if (hasError || !isFinished) {
+        $app
+          .logger()
+          .error(
+            `[INSTAGRAM_POLL_FAIL] Container did not finish processing in time or failed`,
+            'post_id',
+            post.id,
+          )
+        console.log(`[INSTAGRAM_POLL_FAIL] Container não processou a tempo ou deu erro.`)
+        try {
+          const atividades = $app.findCollectionByNameOrId('atividades')
+          const record = new Record(atividades)
+          record.set('empresa_id', post.getString('empresa_id'))
+          record.set('usuario_id', post.getString('criador_id'))
+          record.set('tipo', 'post_rejeitado')
+          record.set(
+            'descricao',
+            `Falha ao publicar no Instagram. O container de mídia não ficou pronto após 5 minutos ou apresentou erro.`,
+          )
+          record.set('referencia_id', post.id)
+          $app.saveNoValidate(record)
+        } catch (err) {}
+        allSuccess = false
         continue
       }
 
