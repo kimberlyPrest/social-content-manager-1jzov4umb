@@ -28,35 +28,35 @@ const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
     <AuthProvider>
       <EmpresaProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/login" element={<Login />} />
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-          <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Index />} />
-              <Route path="/posts" element={<Posts />} />
-              <Route path="/posts/new" element={<CreatePost />} />
-              <Route path="/posts/:id/edit" element={<CreatePost />} />
-              <Route path="/ab-tests" element={<ABTests />} />
-              <Route path="/automations" element={<AutomationsPage />} />
-              <Route path="/webhooks" element={<WebhooksPage />} />
-              <Route path="/monitor" element={<Monitor />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/activity" element={<ActivityPage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/integracoes" element={<Integrations />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Index />} />
+                <Route path="/posts" element={<Posts />} />
+                <Route path="/posts/new" element={<CreatePost />} />
+                <Route path="/posts/:id/edit" element={<CreatePost />} />
+                <Route path="/ab-tests" element={<ABTests />} />
+                <Route path="/automations" element={<AutomationsPage />} />
+                <Route path="/webhooks" element={<WebhooksPage />} />
+                <Route path="/monitor" element={<Monitor />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/activity" element={<ActivityPage />} />
+                <Route path="/team" element={<TeamPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/integracoes" element={<Integrations />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
       </EmpresaProvider>
     </AuthProvider>
   </BrowserRouter>

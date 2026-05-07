@@ -21,12 +21,9 @@ migrate(
     }
 
     // Permite que usuários vejam todas as empresas da sua organização
-    col.listRule =
-      "id = @request.auth.empresa_id || organizacao_id = @request.auth.empresa_id"
-    col.viewRule =
-      "id = @request.auth.empresa_id || organizacao_id = @request.auth.empresa_id"
-    col.createRule =
-      "@request.auth.role = 'master' || @request.auth.role = 'admin'"
+    col.listRule = 'id = @request.auth.empresa_id || organizacao_id = @request.auth.empresa_id'
+    col.viewRule = 'id = @request.auth.empresa_id || organizacao_id = @request.auth.empresa_id'
+    col.createRule = "@request.auth.role = 'master' || @request.auth.role = 'admin'"
     col.updateRule =
       "(id = @request.auth.empresa_id || organizacao_id = @request.auth.empresa_id) && (@request.auth.role = 'master' || @request.auth.role = 'admin')"
 
@@ -47,25 +44,25 @@ migrate(
     // ── 3. posts: permitir acesso a empresas secundárias ───────────────────
     const posts = app.findCollectionByNameOrId('posts')
     posts.listRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     posts.viewRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     posts.createRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     posts.updateRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     app.save(posts)
 
     // ── 4. ab_tests: mesma lógica ──────────────────────────────────────────
     const abTests = app.findCollectionByNameOrId('ab_tests')
     abTests.listRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     abTests.viewRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     abTests.createRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     abTests.updateRule =
-      "empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id"
+      'empresa_id = @request.auth.empresa_id || @request.auth.empresas_acesso ?~ empresa_id'
     app.save(abTests)
 
     // ── 5. Marca empresas existentes como principal ────────────────────────

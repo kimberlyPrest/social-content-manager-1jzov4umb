@@ -20,17 +20,15 @@ routerAdd('GET', '/backend/v1/meta/webhook', (e) => {
     }
   })
 
-  const mode      = params['hub.mode']
+  const mode = params['hub.mode']
   const challenge = params['hub.challenge'] || ''
-  const token     = params['hub.verify_token']
+  const token = params['hub.verify_token']
 
   const verifyToken = $secrets.get('WEBHOOK_VERIFY_TOKEN')
 
-  $app.logger().info(
-    '[META_WEBHOOK] Verificação recebida',
-    'mode', mode,
-    'tokenMatch', token === verifyToken,
-  )
+  $app
+    .logger()
+    .info('[META_WEBHOOK] Verificação recebida', 'mode', mode, 'tokenMatch', token === verifyToken)
 
   if (mode === 'subscribe' && token === verifyToken) {
     return e.string(200, challenge)
@@ -92,12 +90,12 @@ routerAdd('POST', '/backend/v1/meta/webhook', (e) => {
 // Processa um evento de DM recebido
 // ─────────────────────────────────────────────────────────
 function _processarMensagem(empresaId, msg) {
-  const senderId   = (msg.sender && msg.sender.id) || ''
-  const timestamp  = msg.timestamp
+  const senderId = (msg.sender && msg.sender.id) || ''
+  const timestamp = msg.timestamp
     ? new Date(msg.timestamp * 1000).toISOString().replace('T', ' ')
     : new Date().toISOString().replace('T', ' ')
-  const message    = msg.message || {}
-  const igMsgId    = message.mid || ''
+  const message = msg.message || {}
+  const igMsgId = message.mid || ''
 
   if (!senderId || !igMsgId || message.is_deleted) return
 
@@ -108,7 +106,7 @@ function _processarMensagem(empresaId, msg) {
   } catch (_) {}
 
   // Determina tipo e conteúdo
-  let tipo     = 'texto'
+  let tipo = 'texto'
   let conteudo = message.text || ''
   let midiaUrl = ''
 
@@ -117,26 +115,26 @@ function _processarMensagem(empresaId, msg) {
     const att = attachments[0]
     const attUrl = (att.payload && att.payload.url) || ''
     if (att.type === 'story_mention') {
-      tipo     = 'story_mention'
+      tipo = 'story_mention'
       midiaUrl = attUrl
       conteudo = '[Mencionou você nos Stories]'
     } else if (att.type === 'story_reply') {
-      tipo     = 'story_reply'
+      tipo = 'story_reply'
       midiaUrl = attUrl
       conteudo = message.text || '[Respondeu ao seu Story]'
     } else if (att.type === 'image') {
-      tipo     = 'imagem'
+      tipo = 'imagem'
       midiaUrl = attUrl
       conteudo = '[Imagem]'
     } else if (att.type === 'video') {
-      tipo     = 'video'
+      tipo = 'video'
       midiaUrl = attUrl
       conteudo = '[Vídeo]'
     } else if (att.type === 'like') {
-      tipo     = 'reacao'
+      tipo = 'reacao'
       conteudo = '❤️'
     } else {
-      tipo     = 'outro'
+      tipo = 'outro'
       conteudo = '[' + att.type + ']'
     }
   }
@@ -152,7 +150,7 @@ function _processarMensagem(empresaId, msg) {
     )
   } catch (_) {
     const col = $app.findCollectionByNameOrId('conversas_instagram')
-    conversa  = new Record(col)
+    conversa = new Record(col)
     conversa.set('empresa_id', empresaId)
     conversa.set('ig_user_id', senderId)
     conversa.set('ig_username', '')
@@ -171,25 +169,30 @@ function _processarMensagem(empresaId, msg) {
   try {
     $app.saveNoValidate(conversa)
 
-    const msgCol    = $app.findCollectionByNameOrId('mensagens_instagram')
+    const msgCol = $app.findCollectionByNameOrId('mensagens_instagram')
     const msgRecord = new Record(msgCol)
-    msgRecord.set('conversa_id',   conversa.id)
-    msgRecord.set('empresa_id',    empresaId)
+    msgRecord.set('conversa_id', conversa.id)
+    msgRecord.set('empresa_id', empresaId)
     msgRecord.set('ig_message_id', igMsgId)
-    msgRecord.set('origem',        'recebida')
-    msgRecord.set('conteudo',      conteudo)
-    msgRecord.set('tipo',          tipo)
-    msgRecord.set('midia_url',     midiaUrl)
-    msgRecord.set('recebida_em',   timestamp)
-    msgRecord.set('lida',          false)
+    msgRecord.set('origem', 'recebida')
+    msgRecord.set('conteudo', conteudo)
+    msgRecord.set('tipo', tipo)
+    msgRecord.set('midia_url', midiaUrl)
+    msgRecord.set('recebida_em', timestamp)
+    msgRecord.set('lida', false)
     $app.saveNoValidate(msgRecord)
 
-    $app.logger().info(
-      '[META_WEBHOOK] Mensagem salva',
-      'sender', senderId,
-      'tipo', tipo,
-      'conversa_nova', conversaIsNew,
-    )
+    $app
+      .logger()
+      .info(
+        '[META_WEBHOOK] Mensagem salva',
+        'sender',
+        senderId,
+        'tipo',
+        tipo,
+        'conversa_nova',
+        conversaIsNew,
+      )
   } catch (err) {
     $app.logger().error('[META_WEBHOOK] Falha ao salvar mensagem', 'error', err.message)
   }
@@ -206,17 +209,18 @@ function _processarMudanca(empresaId, change) {
   $app.logger().info('[META_WEBHOOK] Change event', 'field', field, 'empresa_id', empresaId)
 
   if (field === 'comments') {
-    $app.logger().info(
-      '[META_WEBHOOK] Comentário recebido',
-      'comment_id', value.id,
-      'text', (value.text || '').substring(0, 100),
-    )
+    $app
+      .logger()
+      .info(
+        '[META_WEBHOOK] Comentário recebido',
+        'comment_id',
+        value.id,
+        'text',
+        (value.text || '').substring(0, 100),
+      )
     // TODO: criar registro em posts_monitorados ou notificar
   } else if (field === 'mentions') {
-    $app.logger().info(
-      '[META_WEBHOOK] Menção recebida',
-      'media_id', value.media_id,
-    )
+    $app.logger().info('[META_WEBHOOK] Menção recebida', 'media_id', value.media_id)
     // TODO: criar registro em posts_monitorados
   } else if (field === 'story_insights') {
     $app.logger().info('[META_WEBHOOK] Story insight recebido', 'value', JSON.stringify(value))

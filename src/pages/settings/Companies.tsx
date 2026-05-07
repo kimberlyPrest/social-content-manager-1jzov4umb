@@ -129,9 +129,7 @@ export default function Companies() {
     const u = teamUsers.find((t) => t.id === userId)
     if (!u) return
     const current: string[] = Array.isArray(u.empresas_acesso) ? u.empresas_acesso : []
-    const updated = hasAccess
-      ? current.filter((id) => id !== companyId)
-      : [...current, companyId]
+    const updated = hasAccess ? current.filter((id) => id !== companyId) : [...current, companyId]
     try {
       await pb.collection('users').update(userId, { empresas_acesso: updated })
       toast.success(hasAccess ? 'Acesso removido.' : 'Acesso concedido.')

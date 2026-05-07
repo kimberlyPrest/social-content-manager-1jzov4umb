@@ -57,10 +57,7 @@ export function Header() {
                   <span className="truncate">{empresa.nome}</span>
                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     {empresa.tipo === 'principal' && (
-                      <Badge
-                        variant="outline"
-                        className="text-[9px] py-0 px-1 h-4 text-slate-500"
-                      >
+                      <Badge variant="outline" className="text-[9px] py-0 px-1 h-4 text-slate-500">
                         principal
                       </Badge>
                     )}

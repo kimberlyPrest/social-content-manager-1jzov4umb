@@ -42,9 +42,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
     try {
       const all = await pb.collection('companies').getFullList<Company>({ sort: 'nome' })
       const acessoIds: string[] = Array.isArray(user.empresas_acesso) ? user.empresas_acesso : []
-      const visibles = all.filter(
-        (c) => c.id === user.empresa_id || acessoIds.includes(c.id),
-      )
+      const visibles = all.filter((c) => c.id === user.empresa_id || acessoIds.includes(c.id))
       setEmpresasAcessiveis(visibles)
 
       const stored = storageKey ? localStorage.getItem(storageKey) : null
