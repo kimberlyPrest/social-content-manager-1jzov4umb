@@ -88,7 +88,7 @@ export default function CreatePost() {
   const watchAgendar = form.watch('agendar')
 
   useEffect(() => {
-    if (user && user.role !== 'admin' && user.role !== 'criador') {
+    if (user && user.role !== 'admin' && user.role !== 'criador' && user.role !== 'master') {
       toast.error('Você não tem permissão para criar posts.')
       navigate('/dashboard')
     }
