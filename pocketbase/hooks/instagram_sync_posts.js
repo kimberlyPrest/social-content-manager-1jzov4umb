@@ -5,8 +5,14 @@ routerAdd(
     const auth = e.auth
     if (!auth) return e.json(401, { ok: false, motivo: 'Não autenticado' })
 
-    const empresaId = auth.getString('empresa_id')
     const userId = auth.id
+    let empresaId = auth.getString('empresa_id')
+    try {
+      const user = $app.findRecordById('users', userId)
+      empresaId = user.getString('empresa_id')
+    } catch (err) {
+      return e.json(401, { ok: false, motivo: 'Usuário não encontrado ou inativo.' })
+    }
 
     const token = $secrets.get('INSTAGRAM_API_KEY')
     if (!token) return e.json(400, { ok: false, motivo: 'INSTAGRAM_API_KEY ausente' })
@@ -79,7 +85,7 @@ routerAdd(
         const postsCol = $app.findCollectionByNameOrId('posts')
         const record = new Record(postsCol)
         record.set('empresa_id', empresaId)
-        record.set('criador_id', 'system_sync_usr')
+        record.set('criador_id', userId)
         record.set('titulo', titulo)
         record.set('conteudo', caption)
         record.set('redes_sociais', JSON.stringify(['instagram']))
@@ -93,7 +99,16 @@ routerAdd(
         record.set('created', publishedAt)
         record.set('updated', publishedAt)
 
-        $app.saveNoValidate(record)
+        try {
+          $app.saveNoValidate(record)
+        } catch (saveErr) {
+          return e.json(500, {
+            ok: false,
+            motivo: 'Falha de relacionamento no banco ao salvar post.',
+            erro: saveErr.message,
+            detalhes: `criador_id=${userId}, empresa_id=${empresaId}`,
+          })
+        }
 
         let curtidas = item.like_count || 0
         let comentarios = item.comments_count || 0
