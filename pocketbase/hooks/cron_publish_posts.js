@@ -67,7 +67,10 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
     let imageUrl = ''
     if (hasImages) {
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl = $os.getenv('PB_INSTANCE_URL') || $os.getenv('VITE_POCKETBASE_URL') || 'https://social-content-manager-7c8af.goskip.app'
+      const baseUrl =
+        $os.getenv('PB_INSTANCE_URL') ||
+        $os.getenv('VITE_POCKETBASE_URL') ||
+        'https://social-content-manager-7c8af.goskip.app'
       imageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
     }
 

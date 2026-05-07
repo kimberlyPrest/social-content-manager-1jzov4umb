@@ -1,7 +1,7 @@
 migrate(
   (app) => {
     const col = app.findCollectionByNameOrId('posts')
-    col.viewRule = "" // Truly public for Instagram API to download images
+    col.viewRule = '' // Truly public for Instagram API to download images
     app.save(col)
   },
   (app) => {

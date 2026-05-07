@@ -163,7 +163,10 @@ onRecordAfterCreateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl = $os.getenv('PB_INSTANCE_URL') || $os.getenv('VITE_POCKETBASE_URL') || 'https://social-content-manager-7c8af.goskip.app'
+      const baseUrl =
+        $os.getenv('PB_INSTANCE_URL') ||
+        $os.getenv('VITE_POCKETBASE_URL') ||
+        'https://social-content-manager-7c8af.goskip.app'
       const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
@@ -708,7 +711,10 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl = $os.getenv('PB_INSTANCE_URL') || $os.getenv('VITE_POCKETBASE_URL') || 'https://social-content-manager-7c8af.goskip.app'
+      const baseUrl =
+        $os.getenv('PB_INSTANCE_URL') ||
+        $os.getenv('VITE_POCKETBASE_URL') ||
+        'https://social-content-manager-7c8af.goskip.app'
       const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
 
       // Step 1: Create Media Container

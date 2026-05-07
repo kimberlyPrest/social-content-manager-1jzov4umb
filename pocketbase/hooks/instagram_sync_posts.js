@@ -88,11 +88,11 @@ routerAdd(
         record.set('id_externo_instagram', item.id)
         record.set('origem', 'importado')
         record.set('imagem_url', imageUrl)
-        
+
         // Forçar data de criação e atualização para ser a data da postagem original
         record.set('created', publishedAt)
         record.set('updated', publishedAt)
-        
+
         $app.saveNoValidate(record)
 
         let curtidas = item.like_count || 0
