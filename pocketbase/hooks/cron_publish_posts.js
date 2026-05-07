@@ -139,7 +139,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
         $app.logger().info(`[API_REQUEST] Chamando API da ${rede} (Step 1)`, 'post_id', post.id)
         try {
           const step1Res = $http.send({
-            url: `https://graph.facebook.com/v19.0/${instaId}/media`,
+            url: `https://graph.facebook.com/v25.0/${instaId}/media`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -168,7 +168,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
 
             $app.logger().info(`[API_REQUEST] Chamando API da ${rede} (Step 2)`, 'post_id', post.id)
             const step2Res = $http.send({
-              url: `https://graph.facebook.com/v19.0/${instaId}/media_publish`,
+              url: `https://graph.facebook.com/v25.0/${instaId}/media_publish`,
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
