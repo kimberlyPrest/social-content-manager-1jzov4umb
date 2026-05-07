@@ -3,6 +3,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { Toaster } from '@/components/ui/toaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/hooks/use-auth'
+import { EmpresaProvider } from '@/hooks/use-empresa-context'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import Layout from './components/Layout'
 
@@ -26,6 +27,7 @@ import { Navigate } from 'react-router-dom'
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
     <AuthProvider>
+      <EmpresaProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -55,6 +57,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>
+      </EmpresaProvider>
     </AuthProvider>
   </BrowserRouter>
 )

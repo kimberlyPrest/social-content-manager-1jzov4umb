@@ -5,6 +5,7 @@ import pb from '@/lib/pocketbase/client'
 import { Button } from '@/components/ui/button'
 import { PostCommentsPanel } from '@/components/posts/PostCommentsPanel'
 import { useToast } from '@/hooks/use-toast'
+import { useEmpresaContext } from '@/hooks/use-empresa-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -60,6 +61,7 @@ export default function Posts() {
   const [editPost, setEditPost] = useState<any | null>(null)
   const [editData, setEditData] = useState<any>({})
   const { toast } = useToast()
+  const { activeEmpresaId } = useEmpresaContext()
 
   const loadPosts = async () => {
     try {
@@ -72,7 +74,7 @@ export default function Posts() {
 
   useEffect(() => {
     loadPosts()
-  }, [])
+  }, [activeEmpresaId])
 
   useRealtime('posts', loadPosts)
 

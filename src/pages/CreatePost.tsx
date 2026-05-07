@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
+import { useEmpresaContext } from '@/hooks/use-empresa-context'
 import { createPostWithFiles, getPost, updatePostWithFiles, publicarPost } from '@/services/api'
 import pb from '@/lib/pocketbase/client'
 import { SocialPreviews } from '@/components/SocialPreviews'
@@ -59,6 +60,7 @@ export default function CreatePost() {
   const { id } = useParams<{ id: string }>()
   const isEditMode = !!id
   const { user } = useAuth()
+  const { activeEmpresaId, activeEmpresa } = useEmpresaContext()
 
   const [files, setFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
@@ -115,7 +117,7 @@ export default function CreatePost() {
           })
           if (post.imagens) {
             const imagesArray = Array.isArray(post.imagens) ? post.imagens : [post.imagens]
-            const urls = imagesArray.map((img: string) => pb.files.getUrl(post, img))
+            const urls = imagesArray.map((img: string) => pb.files.getURL(post, img))
             setExistingImages(urls)
           }
         })
@@ -193,7 +195,7 @@ export default function CreatePost() {
         redes_sociais: values.redes_sociais || [],
         status,
         criador_id: user.id,
-        empresa_id: user.empresa_id,
+        empresa_id: activeEmpresaId || user.empresa_id,
         agendado_para,
         agendamento_tipo: values.agendar === 'now' ? 'agora' : 'depois',
       }
@@ -267,6 +269,12 @@ export default function CreatePost() {
                 ? 'Atualize as informações do seu post.'
                 : 'Crie, visualize e agende seu conteúdo.'}
             </p>
+            {activeEmpresa && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Publicando em:{' '}
+                <span className="font-medium text-foreground">{activeEmpresa.nome}</span>
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -35,7 +35,6 @@ onRecordAfterCreateSuccess((e) => {
   const conteudo = post.getString('conteudo')
   const imagens = post.get('imagens')
   const hasImages = imagens && (Array.isArray(imagens) ? imagens.length > 0 : imagens !== '')
-  const imageUrl = hasImages ? 'https://img.usecurling.com/p/800/800?q=post' : ''
 
   for (const rede of redes) {
     let integracao
@@ -60,12 +59,16 @@ onRecordAfterCreateSuccess((e) => {
 
     let instagramBusinessId = ''
     if (rede === 'instagram') {
-      instagramBusinessId = $secrets.get('INSTAGRAM_ID')
+      try {
+        const company = $app.findRecordById('companies', post.getString('empresa_id'))
+        instagramBusinessId = company.getString('instagram_business_id')
+      } catch (_) {}
+      if (!instagramBusinessId) instagramBusinessId = $secrets.get('INSTAGRAM_ID')
       if (!instagramBusinessId) {
         $app
           .logger()
           .error(
-            `[INSTAGRAM_CONFIG_ERROR] Missing INSTAGRAM_ID secret`,
+            `[INSTAGRAM_CONFIG_ERROR] Instagram Business Account ID não configurado`,
             'post_id',
             post.id,
             'rede',
@@ -517,7 +520,6 @@ onRecordAfterUpdateSuccess((e) => {
   const conteudo = post.getString('conteudo')
   const imagens = post.get('imagens')
   const hasImages = imagens && (Array.isArray(imagens) ? imagens.length > 0 : imagens !== '')
-  const imageUrl = hasImages ? 'https://img.usecurling.com/p/800/800?q=post' : ''
 
   for (const rede of redes) {
     let integracao
@@ -542,12 +544,16 @@ onRecordAfterUpdateSuccess((e) => {
 
     let instagramBusinessId = ''
     if (rede === 'instagram') {
-      instagramBusinessId = $secrets.get('INSTAGRAM_ID')
+      try {
+        const company = $app.findRecordById('companies', post.getString('empresa_id'))
+        instagramBusinessId = company.getString('instagram_business_id')
+      } catch (_) {}
+      if (!instagramBusinessId) instagramBusinessId = $secrets.get('INSTAGRAM_ID')
       if (!instagramBusinessId) {
         $app
           .logger()
           .error(
-            `[INSTAGRAM_CONFIG_ERROR] Missing INSTAGRAM_ID secret`,
+            `[INSTAGRAM_CONFIG_ERROR] Instagram Business Account ID não configurado`,
             'post_id',
             post.id,
             'rede',
