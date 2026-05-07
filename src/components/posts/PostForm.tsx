@@ -49,9 +49,7 @@ export function PostForm({
   useEffect(() => {
     getIntegracoes()
       .then((res) => {
-        const connected = res
-          .filter((i) => i.status === 'conectado' && !!i.access_token)
-          .map((i) => i.rede_social)
+        const connected = res.filter((i) => i.status === 'conectado').map((i) => i.rede_social)
         setConnectedNetworks(connected)
       })
       .catch(console.error)

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
-import { createPostWithFiles, getPost, updatePostWithFiles, publicarPost } from '@/services/api'
+import { createPostWithFiles, getPost, updatePostWithFiles } from '@/services/api'
 import { getIntegracoes } from '@/services/integracao_redes'
 import pb from '@/lib/pocketbase/client'
 import { SocialPreviews } from '@/components/SocialPreviews'
@@ -97,9 +97,7 @@ export default function CreatePost() {
   useEffect(() => {
     getIntegracoes()
       .then((res) => {
-        const connected = res
-          .filter((i) => i.status === 'conectado' && !!i.access_token)
-          .map((i) => i.rede_social)
+        const connected = res.filter((i) => i.status === 'conectado').map((i) => i.rede_social)
         setConnectedNetworks(connected)
       })
       .catch((err) => console.error('Erro ao carregar integrações', err))
@@ -233,27 +231,9 @@ export default function CreatePost() {
         postIdToPublish = response.id
       }
 
-      if (submitAction === 'publish' && values.agendar === 'now' && postIdToPublish) {
-        const publishResult = await publicarPost(postIdToPublish, values.redes_sociais || [])
-        if (publishResult.success) {
-          toast.success('Post publicado com sucesso!')
-          setTimeout(() => navigate('/posts'), 2000)
-        } else {
-          let hasAuthError = false
-          publishResult.errors.forEach((err: any) => {
-            if (err.isAuthError) {
-              hasAuthError = true
-            } else {
-              const errorMessage = err.error?.message || err.error || 'Erro desconhecido'
-              toast.error(`Falha na rede ${err.rede}: ${errorMessage}`)
-            }
-          })
-          if (hasAuthError) {
-            toast.error(
-              'Erro de autenticação: O token da rede social expirou. Por favor, acesse Integrações e reconecte sua conta.',
-            )
-          }
-        }
+      if (submitAction === 'publish' && values.agendar === 'now') {
+        toast.success('Publicação iniciada! Acompanhe o status na lista de posts.')
+        setTimeout(() => navigate('/posts'), 2000)
       } else if (submitAction === 'publish') {
         toast.success(`Post agendado para ${new Date(values.agendado_para!).toLocaleString()}!`)
         setTimeout(() => navigate('/posts'), 2000)
