@@ -142,9 +142,7 @@ onRecordAfterCreateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl =
-        $os.getenv('VITE_POCKETBASE_URL') ||
-        'https://social-content-manager-7c8af.shrd00.internal.goskip.dev'
+      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
       const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
@@ -218,6 +216,19 @@ onRecordAfterCreateSuccess((e) => {
               'rede',
               rede,
             )
+          try {
+            const atividades = $app.findCollectionByNameOrId('atividades')
+            const record = new Record(atividades)
+            record.set('empresa_id', post.getString('empresa_id'))
+            record.set('usuario_id', post.getString('criador_id'))
+            record.set('tipo', 'post_rejeitado')
+            record.set(
+              'descricao',
+              `Falha ao publicar no Instagram (Step 1). Meta API retornou 400: ${JSON.stringify(res1.json || {})}`,
+            )
+            record.set('referencia_id', post.id)
+            $app.saveNoValidate(record)
+          } catch (err) {}
           allSuccess = false
         } else if (res1.statusCode >= 500) {
           $app
@@ -320,6 +331,19 @@ onRecordAfterCreateSuccess((e) => {
               'rede',
               rede,
             )
+          try {
+            const atividades = $app.findCollectionByNameOrId('atividades')
+            const record = new Record(atividades)
+            record.set('empresa_id', post.getString('empresa_id'))
+            record.set('usuario_id', post.getString('criador_id'))
+            record.set('tipo', 'post_rejeitado')
+            record.set(
+              'descricao',
+              `Falha ao publicar no Instagram (Step 2). Meta API retornou 400: ${JSON.stringify(res2.json || {})}`,
+            )
+            record.set('referencia_id', post.id)
+            $app.saveNoValidate(record)
+          } catch (err) {}
           allSuccess = false
         } else if (res2.statusCode >= 500) {
           $app
@@ -430,6 +454,21 @@ onRecordAfterCreateSuccess((e) => {
             'rede',
             rede,
           )
+        if (rede === 'facebook' || rede === 'instagram') {
+          try {
+            const atividades = $app.findCollectionByNameOrId('atividades')
+            const record = new Record(atividades)
+            record.set('empresa_id', post.getString('empresa_id'))
+            record.set('usuario_id', post.getString('criador_id'))
+            record.set('tipo', 'post_rejeitado')
+            record.set(
+              'descricao',
+              `Falha ao publicar no ${rede}. Meta API retornou 400: ${JSON.stringify(res.json || {})}`,
+            )
+            record.set('referencia_id', post.id)
+            $app.saveNoValidate(record)
+          } catch (err) {}
+        }
         allSuccess = false
       } else if (res.statusCode >= 500) {
         $app
@@ -627,9 +666,7 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl =
-        $os.getenv('VITE_POCKETBASE_URL') ||
-        'https://social-content-manager-7c8af.shrd00.internal.goskip.dev'
+      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
       const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
@@ -703,6 +740,19 @@ onRecordAfterUpdateSuccess((e) => {
               'rede',
               rede,
             )
+          try {
+            const atividades = $app.findCollectionByNameOrId('atividades')
+            const record = new Record(atividades)
+            record.set('empresa_id', post.getString('empresa_id'))
+            record.set('usuario_id', post.getString('criador_id'))
+            record.set('tipo', 'post_rejeitado')
+            record.set(
+              'descricao',
+              `Falha ao publicar no Instagram (Step 1). Meta API retornou 400: ${JSON.stringify(res1.json || {})}`,
+            )
+            record.set('referencia_id', post.id)
+            $app.saveNoValidate(record)
+          } catch (err) {}
           allSuccess = false
         } else if (res1.statusCode >= 500) {
           $app
@@ -805,6 +855,19 @@ onRecordAfterUpdateSuccess((e) => {
               'rede',
               rede,
             )
+          try {
+            const atividades = $app.findCollectionByNameOrId('atividades')
+            const record = new Record(atividades)
+            record.set('empresa_id', post.getString('empresa_id'))
+            record.set('usuario_id', post.getString('criador_id'))
+            record.set('tipo', 'post_rejeitado')
+            record.set(
+              'descricao',
+              `Falha ao publicar no Instagram (Step 2). Meta API retornou 400: ${JSON.stringify(res2.json || {})}`,
+            )
+            record.set('referencia_id', post.id)
+            $app.saveNoValidate(record)
+          } catch (err) {}
           allSuccess = false
         } else if (res2.statusCode >= 500) {
           $app
@@ -915,6 +978,21 @@ onRecordAfterUpdateSuccess((e) => {
             'rede',
             rede,
           )
+        if (rede === 'facebook' || rede === 'instagram') {
+          try {
+            const atividades = $app.findCollectionByNameOrId('atividades')
+            const record = new Record(atividades)
+            record.set('empresa_id', post.getString('empresa_id'))
+            record.set('usuario_id', post.getString('criador_id'))
+            record.set('tipo', 'post_rejeitado')
+            record.set(
+              'descricao',
+              `Falha ao publicar no ${rede}. Meta API retornou 400: ${JSON.stringify(res.json || {})}`,
+            )
+            record.set('referencia_id', post.id)
+            $app.saveNoValidate(record)
+          } catch (err) {}
+        }
         allSuccess = false
       } else if (res.statusCode >= 500) {
         $app
