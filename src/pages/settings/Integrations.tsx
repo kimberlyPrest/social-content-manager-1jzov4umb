@@ -14,7 +14,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Facebook, Instagram, Linkedin, AlertCircle, CheckCircle2, XCircle } from 'lucide-react'
+import { Facebook, Instagram, Linkedin, AlertCircle, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import { syncInstagramPosts } from '@/services/api'
 import {
   Dialog,
   DialogContent,
@@ -80,6 +81,7 @@ export default function Integrations() {
   const [selectedRede, setSelectedRede] = useState<any>(null)
   const [isAuthorizing, setIsAuthorizing] = useState(false)
   const [testingInsta, setTestingInsta] = useState(false)
+  const [syncingInsta, setSyncingInsta] = useState(false)
 
   const handleInstagramTest = async (rede: any) => {
     if (!user?.empresa_id) return
@@ -222,6 +224,24 @@ export default function Integrations() {
     }
   }
 
+  const handleInstagramSync = async () => {
+    setSyncingInsta(true)
+    try {
+      const res = await syncInstagramPosts()
+      if (res.imported === 0 && res.skipped > 0) {
+        toast.success(`Todos os ${res.skipped} posts já estavam sincronizados.`)
+      } else if (res.imported > 0) {
+        toast.success(`${res.imported} post${res.imported > 1 ? 's' : ''} importado${res.imported > 1 ? 's' : ''} com sucesso!`)
+      } else {
+        toast.success('Nenhum post encontrado para importar.')
+      }
+    } catch (err: any) {
+      toast.error('Erro ao sincronizar posts do Instagram.')
+    } finally {
+      setSyncingInsta(false)
+    }
+  }
+
   const openConnect = (r: any) => {
     setSelectedRede(r)
     setConnectModalOpen(true)
@@ -311,11 +331,23 @@ export default function Integrations() {
                       <p className="text-sm font-medium text-muted-foreground">Não conectado</p>
                     )}
                   </CardContent>
-                  <CardFooter className="pt-4 border-t mt-auto justify-end">
+                  <CardFooter className="pt-4 border-t mt-auto justify-end gap-2">
                     {isConn ? (
-                      <Button variant="outline" onClick={() => openDisconnect(rede)}>
-                        Desconectar
-                      </Button>
+                      <>
+                        {rede.id === 'instagram' && (
+                          <Button
+                            variant="outline"
+                            onClick={handleInstagramSync}
+                            disabled={syncingInsta}
+                          >
+                            <RefreshCw className={`mr-2 h-4 w-4 ${syncingInsta ? 'animate-spin' : ''}`} />
+                            {syncingInsta ? 'Sincronizando...' : 'Sincronizar Posts'}
+                          </Button>
+                        )}
+                        <Button variant="outline" onClick={() => openDisconnect(rede)}>
+                          Desconectar
+                        </Button>
+                      </>
                     ) : (
                       <Button
                         style={{ backgroundColor: rede.color, color: '#fff' }}

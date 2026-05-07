@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, MoreHorizontal, MessageSquare, Trash2, Edit } from 'lucide-react'
+import { Plus, MessageSquare, Trash2, Edit, ImageOff } from 'lucide-react'
+import pb from '@/lib/pocketbase/client'
 import { Button } from '@/components/ui/button'
 import { PostCommentsPanel } from '@/components/posts/PostCommentsPanel'
 import { useToast } from '@/hooks/use-toast'
@@ -26,6 +27,32 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { getPosts, deletePost, updatePost } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
+
+function PostThumbnail({ post }: { post: any }) {
+  const filename = Array.isArray(post.imagens) ? post.imagens[0] : post.imagens
+  const src = filename
+    ? pb.files.getURL(post, filename)
+    : post.imagem_url || null
+
+  if (!src) {
+    return (
+      <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+        <ImageOff className="w-4 h-4 text-muted-foreground" />
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      className="w-10 h-10 rounded-md object-cover shrink-0"
+      onError={(e) => {
+        ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+      }}
+    />
+  )
+}
 
 export default function Posts() {
   const [posts, setPosts] = useState<any[]>([])
@@ -157,16 +184,26 @@ export default function Posts() {
               {posts.map((post) => (
                 <TableRow key={post.id}>
                   <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>{post.titulo}</span>
-                      {post.status_aprovacao && post.status_aprovacao !== 'nenhum' && (
-                        <span className="text-xs text-muted-foreground mt-1">
-                          Aprovação:{' '}
-                          <Badge variant="outline" className="text-[10px] py-0">
-                            {post.status_aprovacao.replace('_', ' ')}
-                          </Badge>
-                        </span>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <PostThumbnail post={post} />
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span>{post.titulo}</span>
+                          {post.origem === 'importado' && (
+                            <Badge variant="outline" className="text-[10px] py-0 text-pink-600 border-pink-300">
+                              importado
+                            </Badge>
+                          )}
+                        </div>
+                        {post.status_aprovacao && post.status_aprovacao !== 'nenhum' && (
+                          <span className="text-xs text-muted-foreground mt-1">
+                            Aprovação:{' '}
+                            <Badge variant="outline" className="text-[10px] py-0">
+                              {post.status_aprovacao.replace('_', ' ')}
+                            </Badge>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
