@@ -163,7 +163,7 @@ onRecordAfterCreateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
+      const baseUrl = 'https://social-content-manager-7c8af.shrd00.internal.goskip.dev'
       const realImageUrl = `${baseUrl}/api/files/posts/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
@@ -708,7 +708,7 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
+      const baseUrl = 'https://social-content-manager-7c8af.shrd00.internal.goskip.dev'
       const realImageUrl = `${baseUrl}/api/files/posts/${post.id}/${imageName}`
 
       // Step 1: Create Media Container

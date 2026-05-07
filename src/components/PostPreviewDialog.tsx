@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { getPost, getPostMetrics } from '@/services/api'
+import pb from '@/lib/pocketbase/client'
 import { Facebook, Instagram, Linkedin, Video, Image as ImageIcon } from 'lucide-react'
 
 const NETWORK_ICONS: Record<string, any> = {
@@ -135,8 +136,23 @@ export function PostPreviewDialog({ postId, open, onOpenChange }: PostPreviewDia
                 )}
               </div>
 
+              {post.imagens && post.imagens.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(Array.isArray(post.imagens) ? post.imagens : [post.imagens]).map(
+                    (img: string) => (
+                      <img
+                        key={img}
+                        src={pb.files.getURL(post, img)}
+                        alt="Preview"
+                        className="rounded-md object-cover aspect-square w-full"
+                      />
+                    ),
+                  )}
+                </div>
+              )}
+
               {(post.imagens || post.videos) && (
-                <div className="flex gap-4 items-center text-sm text-muted-foreground bg-muted/20 p-2 rounded-md">
+                <div className="flex gap-4 items-center text-sm text-muted-foreground bg-muted/20 p-2 rounded-md mt-2">
                   {post.imagens && (
                     <span className="flex items-center gap-1">
                       <ImageIcon className="h-4 w-4" /> Contém imagem(ns)
