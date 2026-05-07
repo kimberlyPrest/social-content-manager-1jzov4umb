@@ -9,10 +9,19 @@ routerAdd(
     const userId = auth.id
 
     const token = $secrets.get('INSTAGRAM_API_KEY')
-    const igId = $secrets.get('INSTAGRAM_ID')
-
     if (!token) return e.json(400, { ok: false, motivo: 'INSTAGRAM_API_KEY ausente' })
-    if (!igId) return e.json(400, { ok: false, motivo: 'INSTAGRAM_ID ausente' })
+
+    let igId = ''
+    try {
+      const company = $app.findRecordById('companies', empresaId)
+      igId = company.getString('instagram_business_id')
+    } catch (_) {}
+    if (!igId) igId = $secrets.get('INSTAGRAM_ID')
+    if (!igId)
+      return e.json(400, {
+        ok: false,
+        motivo: 'Instagram Business Account ID não configurado para esta empresa.',
+      })
 
     let imported = 0
     let skipped = 0

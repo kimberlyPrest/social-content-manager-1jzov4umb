@@ -7,6 +7,7 @@ import PresetMessages from './settings/PresetMessages'
 import Integrations from './settings/Integrations'
 import Security from './settings/Security'
 import BackupExport from './settings/BackupExport'
+import Companies from './settings/Companies'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -52,6 +53,14 @@ export default function SettingsPage() {
               Respostas
             </TabsTrigger>
           )}
+          {canEditGlobal && (
+            <TabsTrigger
+              value="empresas"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200"
+            >
+              Empresas
+            </TabsTrigger>
+          )}
           {isMaster && (
             <TabsTrigger
               value="integracoes"
@@ -95,6 +104,11 @@ export default function SettingsPage() {
           {canEditGlobal && (
             <TabsContent value="mensagens" className="mt-0">
               <PresetMessages />
+            </TabsContent>
+          )}
+          {canEditGlobal && (
+            <TabsContent value="empresas" className="mt-0">
+              <Companies />
             </TabsContent>
           )}
           {isMaster && (

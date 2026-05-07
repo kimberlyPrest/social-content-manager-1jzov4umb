@@ -118,11 +118,20 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
       const fullText = `${titulo}\n\n${conteudo || ''}`.trim()
 
       if (rede === 'instagram') {
-        const instaId = $secrets.get('INSTAGRAM_ID')
+        let instaId = ''
+        try {
+          const company = $app.findRecordById('companies', post.getString('empresa_id'))
+          instaId = company.getString('instagram_business_id')
+        } catch (_) {}
+        if (!instaId) instaId = $secrets.get('INSTAGRAM_ID')
         if (!instaId) {
           $app
             .logger()
-            .error('[INSTAGRAM_CONFIG_ERROR] Missing INSTAGRAM_ID secret', 'post_id', post.id)
+            .error(
+              '[INSTAGRAM_CONFIG_ERROR] Instagram Business Account ID não configurado',
+              'post_id',
+              post.id,
+            )
           allSuccess = false
           continue
         }
