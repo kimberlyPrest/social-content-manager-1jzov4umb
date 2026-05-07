@@ -163,11 +163,8 @@ onRecordAfterCreateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl =
-        $os.getenv('PB_INSTANCE_URL') ||
-        $os.getenv('VITE_POCKETBASE_URL') ||
-        'https://social-content-manager-7c8af.goskip.app'
-      const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
+      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
+      const realImageUrl = `${baseUrl}/api/files/posts/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
       const step1Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media`
@@ -188,7 +185,7 @@ onRecordAfterCreateSuccess((e) => {
           'payload',
           JSON.stringify(step1Body),
         )
-      console.log('Chamando API:', step1Url, 'com dados:', step1Body)
+      console.log('Chamando API:', step1Url, 'com dados:', JSON.stringify(step1Body))
 
       let creationId = null
       try {
@@ -211,7 +208,7 @@ onRecordAfterCreateSuccess((e) => {
             'body',
             JSON.stringify(res1.json || {}),
           )
-        console.log('Resposta da API (Step 1):', res1.json || {})
+        console.log('Resposta da API (Step 1):', JSON.stringify(res1.json || {}))
 
         if (res1.statusCode >= 200 && res1.statusCode < 300 && res1.json && res1.json.id) {
           creationId = res1.json.id
@@ -304,7 +301,7 @@ onRecordAfterCreateSuccess((e) => {
           'payload',
           JSON.stringify(step2Body),
         )
-      console.log('Chamando API:', step2Url, 'com dados:', step2Body)
+      console.log('Chamando API:', step2Url, 'com dados:', JSON.stringify(step2Body))
 
       try {
         const res2 = $http.send({
@@ -326,7 +323,7 @@ onRecordAfterCreateSuccess((e) => {
             'body',
             JSON.stringify(res2.json || {}),
           )
-        console.log('Resposta da API (Step 2):', res2.json || {})
+        console.log('Resposta da API (Step 2):', JSON.stringify(res2.json || {}))
 
         if (res2.statusCode >= 200 && res2.statusCode < 300 && res2.json && res2.json.id) {
           post.set('id_externo_instagram', res2.json.id)
@@ -427,7 +424,7 @@ onRecordAfterCreateSuccess((e) => {
         'payload',
         JSON.stringify(body),
       )
-    console.log('Chamando API:', url, 'com dados:', body)
+    console.log('Chamando API:', url, 'com dados:', JSON.stringify(body))
 
     try {
       const res = $http.send({
@@ -449,7 +446,7 @@ onRecordAfterCreateSuccess((e) => {
           'body',
           JSON.stringify(res.json || {}),
         )
-      console.log('Resposta da API:', res.json || {})
+      console.log('Resposta da API:', JSON.stringify(res.json || {}))
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         // success
@@ -711,11 +708,8 @@ onRecordAfterUpdateSuccess((e) => {
       }
 
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      const baseUrl =
-        $os.getenv('PB_INSTANCE_URL') ||
-        $os.getenv('VITE_POCKETBASE_URL') ||
-        'https://social-content-manager-7c8af.goskip.app'
-      const realImageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
+      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
+      const realImageUrl = `${baseUrl}/api/files/posts/${post.id}/${imageName}`
 
       // Step 1: Create Media Container
       const step1Url = `https://graph.facebook.com/v25.0/${instagramBusinessId}/media`
@@ -736,7 +730,7 @@ onRecordAfterUpdateSuccess((e) => {
           'payload',
           JSON.stringify(step1Body),
         )
-      console.log('Chamando API:', step1Url, 'com dados:', step1Body)
+      console.log('Chamando API:', step1Url, 'com dados:', JSON.stringify(step1Body))
 
       let creationId = null
       try {
@@ -759,7 +753,7 @@ onRecordAfterUpdateSuccess((e) => {
             'body',
             JSON.stringify(res1.json || {}),
           )
-        console.log('Resposta da API (Step 1):', res1.json || {})
+        console.log('Resposta da API (Step 1):', JSON.stringify(res1.json || {}))
 
         if (res1.statusCode >= 200 && res1.statusCode < 300 && res1.json && res1.json.id) {
           creationId = res1.json.id
@@ -852,7 +846,7 @@ onRecordAfterUpdateSuccess((e) => {
           'payload',
           JSON.stringify(step2Body),
         )
-      console.log('Chamando API:', step2Url, 'com dados:', step2Body)
+      console.log('Chamando API:', step2Url, 'com dados:', JSON.stringify(step2Body))
 
       try {
         const res2 = $http.send({
@@ -874,7 +868,7 @@ onRecordAfterUpdateSuccess((e) => {
             'body',
             JSON.stringify(res2.json || {}),
           )
-        console.log('Resposta da API (Step 2):', res2.json || {})
+        console.log('Resposta da API (Step 2):', JSON.stringify(res2.json || {}))
 
         if (res2.statusCode >= 200 && res2.statusCode < 300 && res2.json && res2.json.id) {
           post.set('id_externo_instagram', res2.json.id)
@@ -975,7 +969,7 @@ onRecordAfterUpdateSuccess((e) => {
         'payload',
         JSON.stringify(body),
       )
-    console.log('Chamando API:', url, 'com dados:', body)
+    console.log('Chamando API:', url, 'com dados:', JSON.stringify(body))
 
     try {
       const res = $http.send({
@@ -997,7 +991,7 @@ onRecordAfterUpdateSuccess((e) => {
           'body',
           JSON.stringify(res.json || {}),
         )
-      console.log('Resposta da API:', res.json || {})
+      console.log('Resposta da API:', JSON.stringify(res.json || {}))
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         // success
