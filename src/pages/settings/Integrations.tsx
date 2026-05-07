@@ -14,7 +14,15 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Facebook, Instagram, Linkedin, AlertCircle, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+} from 'lucide-react'
 import { syncInstagramPosts } from '@/services/api'
 import {
   Dialog,
@@ -231,7 +239,9 @@ export default function Integrations() {
       if (res.imported === 0 && res.skipped > 0) {
         toast.success(`Todos os ${res.skipped} posts já estavam sincronizados.`)
       } else if (res.imported > 0) {
-        toast.success(`${res.imported} post${res.imported > 1 ? 's' : ''} importado${res.imported > 1 ? 's' : ''} com sucesso!`)
+        toast.success(
+          `${res.imported} post${res.imported > 1 ? 's' : ''} importado${res.imported > 1 ? 's' : ''} com sucesso!`,
+        )
       } else {
         toast.success('Nenhum post encontrado para importar.')
       }
@@ -340,7 +350,9 @@ export default function Integrations() {
                             onClick={handleInstagramSync}
                             disabled={syncingInsta}
                           >
-                            <RefreshCw className={`mr-2 h-4 w-4 ${syncingInsta ? 'animate-spin' : ''}`} />
+                            <RefreshCw
+                              className={`mr-2 h-4 w-4 ${syncingInsta ? 'animate-spin' : ''}`}
+                            />
                             {syncingInsta ? 'Sincronizando...' : 'Sincronizar Posts'}
                           </Button>
                         )}

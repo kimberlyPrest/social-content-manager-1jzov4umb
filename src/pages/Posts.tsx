@@ -30,9 +30,7 @@ import { useRealtime } from '@/hooks/use-realtime'
 
 function PostThumbnail({ post }: { post: any }) {
   const filename = Array.isArray(post.imagens) ? post.imagens[0] : post.imagens
-  const src = filename
-    ? pb.files.getURL(post, filename)
-    : post.imagem_url || null
+  const src = filename ? pb.files.getURL(post, filename) : post.imagem_url || null
 
   if (!src) {
     return (
@@ -190,7 +188,10 @@ export default function Posts() {
                         <div className="flex items-center gap-2">
                           <span>{post.titulo}</span>
                           {post.origem === 'importado' && (
-                            <Badge variant="outline" className="text-[10px] py-0 text-pink-600 border-pink-300">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 text-pink-600 border-pink-300"
+                            >
                               importado
                             </Badge>
                           )}
