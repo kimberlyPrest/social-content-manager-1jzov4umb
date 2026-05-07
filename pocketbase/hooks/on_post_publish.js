@@ -12,6 +12,27 @@ onRecordAfterCreateSuccess((e) => {
     }
   }
 
+  let locked = false
+  try {
+    $app.runInTransaction((txApp) => {
+      const p = txApp.findRecordById('posts', post.id)
+      if (p.getString('status') === 'agendado') {
+        p.set('status', 'processando')
+        txApp.saveNoValidate(p)
+        locked = true
+      }
+    })
+  } catch (err) {
+    $app.logger().error('Error locking post for publish', 'post_id', post.id, 'error', err.message)
+  }
+
+  if (!locked) {
+    $app.logger().info(`[PUBLISH_SKIP] Post is not agendado or already locked`, 'post_id', post.id)
+    return e.next()
+  }
+
+  post.set('status', 'processando')
+
   $app.logger().info(`[PUBLISH_START] Initiation of the publication process`, 'post_id', post.id)
   console.log('Iniciando publicação do post:', post.id)
 
@@ -535,6 +556,27 @@ onRecordAfterUpdateSuccess((e) => {
       return e.next()
     }
   }
+
+  let locked = false
+  try {
+    $app.runInTransaction((txApp) => {
+      const p = txApp.findRecordById('posts', post.id)
+      if (p.getString('status') === 'agendado') {
+        p.set('status', 'processando')
+        txApp.saveNoValidate(p)
+        locked = true
+      }
+    })
+  } catch (err) {
+    $app.logger().error('Error locking post for publish', 'post_id', post.id, 'error', err.message)
+  }
+
+  if (!locked) {
+    $app.logger().info(`[PUBLISH_SKIP] Post is not agendado or already locked`, 'post_id', post.id)
+    return e.next()
+  }
+
+  post.set('status', 'processando')
 
   $app.logger().info(`[PUBLISH_START] Initiation of the publication process`, 'post_id', post.id)
   console.log('Iniciando publicação do post:', post.id)

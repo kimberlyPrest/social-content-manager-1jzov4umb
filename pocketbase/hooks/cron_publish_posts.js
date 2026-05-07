@@ -19,6 +19,26 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
   $app.logger().info(`Encontrados ${posts.length} posts agendados para publicar`)
 
   for (const post of posts) {
+    let locked = false
+    try {
+      $app.runInTransaction((txApp) => {
+        const p = txApp.findRecordById('posts', post.id)
+        if (p.getString('status') === 'agendado') {
+          p.set('status', 'processando')
+          txApp.saveNoValidate(p)
+          locked = true
+        }
+      })
+    } catch (err) {
+      $app.logger().error('Error locking post in cron', 'post_id', post.id, 'error', err.message)
+    }
+
+    if (!locked) {
+      continue
+    }
+
+    post.set('status', 'processando')
+
     $app
       .logger()
       .info(`[PUBLISH_START] Publicação iniciada para o post ${post.id}`, 'post_id', post.id)
@@ -47,8 +67,7 @@ cronAdd('publish_scheduled_posts', '*/1 * * * *', () => {
     let imageUrl = ''
     if (hasImages) {
       const imageName = Array.isArray(imagens) ? imagens[0] : imagens
-      let baseUrl = $os.getenv('VITE_POCKETBASE_URL')
-      if (baseUrl && baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1)
+      const baseUrl = 'https://social-content-manager-7c8af.goskip.app'
       imageUrl = `${baseUrl}/api/files/${post.collectionId}/${post.id}/${imageName}`
     }
 
