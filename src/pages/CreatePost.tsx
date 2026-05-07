@@ -244,7 +244,18 @@ export default function CreatePost() {
         setTimeout(() => navigate('/posts'), 2000)
       }
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao salvar post. Tente novamente.')
+      const respData = error?.response?.data || {}
+      const hasRelError =
+        respData.empresa_id?.code === 'validation_missing_rel_records' ||
+        respData.criador_id?.code === 'validation_missing_rel_records'
+
+      if (hasRelError) {
+        toast.error(
+          'Erro de integridade de dados. Por favor, atualize a página para recarregar sua sessão ou contate o suporte.',
+        )
+      } else {
+        toast.error(error.message || 'Erro ao salvar post. Tente novamente.')
+      }
     }
   }
 

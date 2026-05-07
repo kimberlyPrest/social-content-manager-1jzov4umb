@@ -135,6 +135,13 @@ export default function Integrations() {
         )
       } else if (status === 401 || body.resposta?.error?.code === 190) {
         toast.error('Token inválido ou expirado: Verifique o INSTAGRAM_API_KEY.')
+      } else if (
+        body.data?.empresa_id?.code === 'validation_missing_rel_records' ||
+        err?.response?.data?.empresa_id?.code === 'validation_missing_rel_records'
+      ) {
+        toast.error(
+          'Sua sessão está dessincronizada. Por favor, atualize a página para recarregar os dados.',
+        )
       } else {
         toast.error('Falha ao validar conexão.')
       }
@@ -212,8 +219,15 @@ export default function Integrations() {
       )
       toast.success(`${selectedRede.name} conectado com sucesso!`)
       setConnectModalOpen(false)
-    } catch (err) {
-      toast.error(`Erro ao conectar ${selectedRede.name}.`)
+    } catch (err: any) {
+      const respData = err?.response?.data || {}
+      if (respData.empresa_id?.code === 'validation_missing_rel_records') {
+        toast.error(
+          'Sua sessão está dessincronizada. Por favor, atualize a página para recarregar os dados.',
+        )
+      } else {
+        toast.error(`Erro ao conectar ${selectedRede.name}.`)
+      }
     } finally {
       setIsAuthorizing(false)
     }
