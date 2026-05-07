@@ -4,6 +4,10 @@ export const syncMetrics = async () => {
   return pb.send('/backend/v1/metrics/sync', { method: 'POST' })
 }
 
+export const syncInstagramPosts = async () => {
+  return pb.send('/backend/v1/instagram/sync-posts', { method: 'POST' })
+}
+
 export const getDashboardData = async (days: number = 7) => {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
