@@ -8,6 +8,7 @@ import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
 import { createPostWithFiles, getPost, updatePostWithFiles, publicarPost } from '@/services/api'
+import { getIntegracoes } from '@/services/integracao_redes'
 import pb from '@/lib/pocketbase/client'
 import { SocialPreviews } from '@/components/SocialPreviews'
 import { cn } from '@/lib/utils'
@@ -68,6 +69,7 @@ export default function CreatePost() {
   const [isDragging, setIsDragging] = useState(false)
   const [submitAction, setSubmitAction] = useState<'draft' | 'publish'>('draft')
   const [loadingPost, setLoadingPost] = useState(isEditMode)
+  const [connectedNetworks, setConnectedNetworks] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -91,6 +93,17 @@ export default function CreatePost() {
       navigate('/dashboard')
     }
   }, [user, navigate])
+
+  useEffect(() => {
+    getIntegracoes()
+      .then((res) => {
+        const connected = res
+          .filter((i) => i.status === 'conectado' && !!i.access_token)
+          .map((i) => i.rede_social)
+        setConnectedNetworks(connected)
+      })
+      .catch((err) => console.error('Erro ao carregar integrações', err))
+  }, [activeEmpresaId])
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -166,6 +179,17 @@ export default function CreatePost() {
           toast.error('Selecione pelo menos uma rede')
           return
         }
+
+        const invalidNetworks = values.redes_sociais.filter((n) => !connectedNetworks.includes(n))
+        if (invalidNetworks.length > 0) {
+          const labels = invalidNetworks.map(
+            (n) => NETWORKS.find((net) => net.id === n)?.label || n,
+          )
+          toast.error(
+            `A(s) rede(s) ${labels.join(', ')} não estão conectadas. Conecte-as em Integrações.`,
+          )
+          return
+        }
       }
 
       const isOverLimit = watchRedes.some((n) => {
@@ -220,7 +244,8 @@ export default function CreatePost() {
             if (err.isAuthError) {
               hasAuthError = true
             } else {
-              toast.error(`Falha ao publicar na rede: ${err.rede}`)
+              const errorMessage = err.error?.message || err.error || 'Erro desconhecido'
+              toast.error(`Falha na rede ${err.rede}: ${errorMessage}`)
             }
           })
           if (hasAuthError) {
@@ -295,34 +320,55 @@ export default function CreatePost() {
                           1. Onde você quer publicar?
                         </FormLabel>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-                          {NETWORKS.map((network) => (
-                            <FormField
-                              key={network.id}
-                              control={form.control}
-                              name="redes_sociais"
-                              render={({ field }) => (
-                                <FormItem className="flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3 bg-muted/20">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(network.id)}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          field.onChange([...field.value, network.id])
-                                        } else {
-                                          field.onChange(
-                                            field.value?.filter((v) => v !== network.id),
-                                          )
-                                        }
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-medium cursor-pointer flex-1">
-                                    {network.label}
-                                  </FormLabel>
-                                </FormItem>
-                              )}
-                            />
-                          ))}
+                          {NETWORKS.map((network) => {
+                            const isConnected = connectedNetworks.includes(network.id)
+                            return (
+                              <FormField
+                                key={network.id}
+                                control={form.control}
+                                name="redes_sociais"
+                                render={({ field }) => (
+                                  <FormItem
+                                    className={cn(
+                                      'flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3',
+                                      isConnected ? 'bg-muted/20' : 'bg-muted/5 opacity-60',
+                                    )}
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(network.id)}
+                                        disabled={!isConnected}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            field.onChange([...(field.value || []), network.id])
+                                          } else {
+                                            field.onChange(
+                                              field.value?.filter((v) => v !== network.id),
+                                            )
+                                          }
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <div className="flex flex-col flex-1">
+                                      <FormLabel
+                                        className={cn(
+                                          'font-medium',
+                                          isConnected ? 'cursor-pointer' : 'cursor-not-allowed',
+                                        )}
+                                      >
+                                        {network.label}
+                                      </FormLabel>
+                                      {!isConnected && (
+                                        <span className="text-[10px] text-destructive leading-none mt-1">
+                                          Desconectada
+                                        </span>
+                                      )}
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                            )
+                          })}
                         </div>
                         <FormMessage />
                       </FormItem>

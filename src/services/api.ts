@@ -237,9 +237,9 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
     console.log('📤 Publicando em:', rede)
     const integracao = integracoes.find((i) => i.rede_social === rede)
 
-    if (!integracao || !integracao.access_token) {
-      const err = new Error(`Token não encontrado para a rede ${rede}`)
-      console.error('❌ Erro ao publicar em', rede, err)
+    if (!integracao || !integracao.access_token || integracao.status !== 'conectado') {
+      const err = new Error(`Integração não encontrada ou desconectada para a rede ${rede}`)
+      console.error('❌ Erro de validação ao publicar em', rede, err.message)
       hasError = true
       errors.push({ rede, error: err })
       continue

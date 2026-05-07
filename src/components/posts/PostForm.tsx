@@ -1,4 +1,7 @@
+import { useState, useEffect } from 'react'
 import { UseFormReturn } from 'react-hook-form'
+import { getIntegracoes } from '@/services/integracao_redes'
+import { cn } from '@/lib/utils'
 import {
   Form,
   FormControl,
@@ -40,6 +43,19 @@ export function PostForm({
   const conteudo = form.watch('conteudo') || ''
   const titulo = form.watch('titulo') || ''
   const agendamentoTipo = form.watch('agendamento_tipo')
+
+  const [connectedNetworks, setConnectedNetworks] = useState<string[]>([])
+
+  useEffect(() => {
+    getIntegracoes()
+      .then((res) => {
+        const connected = res
+          .filter((i) => i.status === 'conectado' && !!i.access_token)
+          .map((i) => i.rede_social)
+        setConnectedNetworks(connected)
+      })
+      .catch(console.error)
+  }, [])
 
   return (
     <Form {...form}>
@@ -100,32 +116,53 @@ export function PostForm({
                 <FormDescription>Selecione onde este post será publicado.</FormDescription>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {NETWORKS.map((network) => (
-                  <FormField
-                    key={network.id}
-                    control={form.control}
-                    name="redes_sociais"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-card hover:bg-accent/50 transition-colors">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value?.includes(network.id)}
-                            onCheckedChange={(checked) => {
-                              return checked
-                                ? field.onChange([...(field.value || []), network.id])
-                                : field.onChange(
-                                    field.value?.filter((value) => value !== network.id),
-                                  )
-                            }}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal cursor-pointer w-full text-sm">
-                          {network.label}
-                        </FormLabel>
-                      </FormItem>
-                    )}
-                  />
-                ))}
+                {NETWORKS.map((network) => {
+                  const isConnected = connectedNetworks.includes(network.id)
+                  return (
+                    <FormField
+                      key={network.id}
+                      control={form.control}
+                      name="redes_sociais"
+                      render={({ field }) => (
+                        <FormItem
+                          className={cn(
+                            'flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm transition-colors',
+                            isConnected ? 'bg-card hover:bg-accent/50' : 'bg-muted/50 opacity-60',
+                          )}
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(network.id)}
+                              disabled={!isConnected}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), network.id])
+                                  : field.onChange(
+                                      field.value?.filter((value) => value !== network.id),
+                                    )
+                              }}
+                            />
+                          </FormControl>
+                          <div className="flex flex-col flex-1">
+                            <FormLabel
+                              className={cn(
+                                'font-normal text-sm w-full',
+                                isConnected ? 'cursor-pointer' : 'cursor-not-allowed',
+                              )}
+                            >
+                              {network.label}
+                            </FormLabel>
+                            {!isConnected && (
+                              <span className="text-[10px] text-destructive leading-none mt-1">
+                                Desconectada
+                              </span>
+                            )}
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )
+                })}
               </div>
               <FormMessage />
             </FormItem>
