@@ -7,8 +7,10 @@ import { ReportsTable } from '@/components/reports/ReportsTable'
 import { fetchReportsData, ReportData } from '@/services/reports'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useEmpresaContext } from '@/hooks/use-empresa-context'
 
 export default function Reports() {
+  const { activeEmpresaId } = useEmpresaContext()
   const [period, setPeriod] = useState('30')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -17,6 +19,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!activeEmpresaId) return
+
     const loadData = async () => {
       setLoading(true)
       try {
@@ -29,7 +33,7 @@ export default function Reports() {
         } else {
           start.setDate(start.getDate() - parseInt(period))
         }
-        const res = await fetchReportsData(start, end, networks)
+        const res = await fetchReportsData(start, end, networks, activeEmpresaId)
         setData(res)
         toast.success('Relatórios carregados com sucesso')
       } catch (err) {
@@ -41,7 +45,7 @@ export default function Reports() {
 
     const timeout = setTimeout(loadData, 300)
     return () => clearTimeout(timeout)
-  }, [period, customStart, customEnd, networks])
+  }, [period, customStart, customEnd, networks, activeEmpresaId])
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
@@ -70,7 +74,7 @@ export default function Reports() {
         <div className="py-20 text-center border-2 border-dashed rounded-xl bg-muted/10 mt-6">
           <h3 className="text-lg font-medium text-slate-700 mb-1">Sem dados disponíveis</h3>
           <p className="text-slate-500">
-            Nenhuma métrica foi encontrada para o período e redes selecionadas.
+            Nenhuma métrica foi encontrada para o período e redes selecionadas nesta empresa.
           </p>
         </div>
       ) : (

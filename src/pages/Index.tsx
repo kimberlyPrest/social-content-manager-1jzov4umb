@@ -51,6 +51,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { getDashboardData, syncMetrics, deletePost } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
+import { useEmpresaContext } from '@/hooks/use-empresa-context'
 
 const statusColors: Record<string, string> = {
   rascunho: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent',
@@ -62,6 +63,7 @@ const statusColors: Record<string, string> = {
 
 export default function Index() {
   const { user } = useAuth()
+  const { activeEmpresaId, activeEmpresa } = useEmpresaContext()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -72,8 +74,9 @@ export default function Index() {
   const notifiedPosts = useRef(new Set<string>())
 
   const loadData = async () => {
+    if (!activeEmpresaId) return
     try {
-      const res = await getDashboardData(parseInt(days))
+      const res = await getDashboardData(parseInt(days), activeEmpresaId)
       setData(res)
       setError(false)
     } catch (err) {
@@ -84,9 +87,11 @@ export default function Index() {
   }
 
   useEffect(() => {
-    setLoading(true)
-    loadData()
-  }, [days])
+    if (activeEmpresaId) {
+      setLoading(true)
+      loadData()
+    }
+  }, [days, activeEmpresaId])
 
   useRealtime('metrics_posts', () => loadData())
   useRealtime('posts', () => loadData())
@@ -358,7 +363,9 @@ export default function Index() {
             ) : !data?.posts || data.posts.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">Nenhum post criado ainda</p>
+                <p className="text-muted-foreground mb-4">
+                  Nenhum post criado para <b>{activeEmpresa?.nome || 'esta empresa'}</b> ainda
+                </p>
                 <Button asChild>
                   <Link to="/posts/new">Criar primeiro post</Link>
                 </Button>
@@ -366,7 +373,9 @@ export default function Index() {
             ) : publishedCount === 0 ? (
               <div className="text-center py-12">
                 <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">Nenhum post publicado ainda</p>
+                <p className="text-muted-foreground mb-4">
+                  Nenhum post publicado em <b>{activeEmpresa?.nome || 'esta empresa'}</b> ainda
+                </p>
                 <Button asChild>
                   <Link to="/posts/new">Agendar Publicação</Link>
                 </Button>

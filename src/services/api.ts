@@ -8,17 +8,26 @@ export const syncInstagramPosts = async () => {
   return pb.send('/backend/v1/instagram/sync-posts', { method: 'POST' })
 }
 
-export const getDashboardData = async (days: number = 7) => {
+export const getDashboardData = async (days: number = 7, empresaId?: string) => {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
 
+  const metricsFilter = [
+    `updated >= "${startDate.toISOString().replace('T', ' ')}"`,
+    empresaId ? `post_id.empresa_id = "${empresaId}"` : '',
+  ]
+    .filter(Boolean)
+    .join(' && ')
+
   const metrics = await pb.collection('metrics_posts').getFullList({
-    filter: `updated >= "${startDate.toISOString().replace('T', ' ')}"`,
+    filter: metricsFilter,
     expand: 'post_id',
     sort: '+updated',
   })
 
+  const postsFilter = empresaId ? `empresa_id = "${empresaId}"` : ''
   const posts = await pb.collection('posts').getFullList({
+    filter: postsFilter,
     sort: '-created',
     expand: 'criador_id',
   })
@@ -83,8 +92,10 @@ export const getDashboardData = async (days: number = 7) => {
   return { stats, metrics, posts, distData, perfData }
 }
 
-export const getDashboardStats = async () => {
-  const metrics = await pb.collection('metrics_posts').getFullList()
+export const getDashboardStats = async (empresaId?: string) => {
+  const metrics = await pb.collection('metrics_posts').getFullList({
+    filter: empresaId ? `post_id.empresa_id = "${empresaId}"` : '',
+  })
 
   return metrics.reduce(
     (acc, m) => {
@@ -98,10 +109,12 @@ export const getDashboardStats = async () => {
   )
 }
 
-export const getPosts = async (limit = 10) => {
+export const getPosts = async (limit = 10, empresaId?: string) => {
+  const filter = empresaId ? `empresa_id = "${empresaId}"` : ''
   return pb.collection('posts').getList(1, limit, {
     sort: '-created',
     expand: 'criador_id',
+    filter,
   })
 }
 
@@ -290,10 +303,12 @@ export const publicarPost = async (postId: string, redesSelecionadas: string[]) 
   return { success: !hasError, errors }
 }
 
-export const getABTests = async () => {
+export const getABTests = async (empresaId?: string) => {
+  const filter = empresaId ? `empresa_id = "${empresaId}"` : ''
   return pb.collection('ab_tests').getFullList({
     expand: 'post_id_a,post_id_b',
     sort: '-created',
+    filter,
   })
 }
 
@@ -312,9 +327,11 @@ export const getRecommendations = async (testId: string) => {
   })
 }
 
-export const getPublishedPosts = async () => {
+export const getPublishedPosts = async (empresaId?: string) => {
+  const filters = [`status = 'publicado'`]
+  if (empresaId) filters.push(`empresa_id = "${empresaId}"`)
   return pb.collection('posts').getFullList({
-    filter: `status = 'publicado'`,
+    filter: filters.join(' && '),
     sort: '-created',
   })
 }
@@ -346,9 +363,13 @@ export const deleteComment = async (id: string) => {
   return pb.collection('comentarios').delete(id)
 }
 
-export const getActivities = async (filterStr = '') => {
+export const getActivities = async (filterStr = '', empresaId?: string) => {
+  const filters = []
+  if (filterStr) filters.push(`(${filterStr})`)
+  if (empresaId) filters.push(`empresa_id = "${empresaId}"`)
+
   return pb.collection('atividades').getFullList({
-    filter: filterStr,
+    filter: filters.join(' && '),
     expand: 'usuario_id',
     sort: '-created',
   })
@@ -375,10 +396,11 @@ export const deleteNotification = async (id: string) => {
   return pb.collection('notifications').delete(id)
 }
 
-export const getCompanyUsers = async () => {
+export const getCompanyUsers = async (empresaId?: string) => {
   const user = pb.authStore.record
   if (!user) return []
+  const targetId = empresaId || user.empresa_id
   return pb.collection('users').getFullList({
-    filter: `empresa_id = "${user.empresa_id}"`,
+    filter: `empresa_id = "${targetId}"`,
   })
 }

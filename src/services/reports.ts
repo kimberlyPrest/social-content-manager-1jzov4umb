@@ -13,15 +13,28 @@ export interface ReportData {
   alcance: number
 }
 
-export async function fetchReportsData(startDate: Date, endDate: Date, networks: string[]) {
+export async function fetchReportsData(
+  startDate: Date,
+  endDate: Date,
+  networks: string[],
+  empresaId?: string,
+) {
   let data: ReportData[] = []
 
   try {
     const startStr = startDate.toISOString().replace('T', ' ')
     const endStr = endDate.toISOString().replace('T', ' ')
 
+    const filterArr = [
+      `updated >= "${startStr}"`,
+      `updated <= "${endStr}"`,
+      empresaId ? `post_id.empresa_id = "${empresaId}"` : '',
+    ]
+      .filter(Boolean)
+      .join(' && ')
+
     const metrics = await pb.collection('metrics_posts').getFullList({
-      filter: `updated >= "${startStr}" && updated <= "${endStr}"`,
+      filter: filterArr,
       expand: 'post_id',
     })
 
