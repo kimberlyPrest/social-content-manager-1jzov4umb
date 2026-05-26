@@ -43,6 +43,7 @@ export function AiCampaignModal({
   const [titles, setTitles] = useState<string[]>([])
   const [selectedTitles, setSelectedTitles] = useState<string[]>([])
   const [selectedNetworks, setSelectedNetworks] = useState<string[]>([])
+  const [retryCount, setRetryCount] = useState(0)
 
   const handleGenerateTitles = async () => {
     if (!theme.trim()) {
@@ -53,17 +54,38 @@ export function AiCampaignModal({
     setLoadingTitles(true)
     setTitles([])
     setSelectedTitles([])
+
     try {
-      const res = await getAITitles(theme)
-      if (res && res.titles && Array.isArray(res.titles) && res.titles.length >= 5) {
+      const fetchPromise = getAITitles(theme)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 30000),
+      )
+
+      const res: any = await Promise.race([fetchPromise, timeoutPromise])
+
+      if (res && res.titles && Array.isArray(res.titles) && res.titles.length > 0) {
         setTitles(res.titles)
-      } else if (res && res.titles) {
-        setTitles(res.titles)
+        setRetryCount(0)
       } else {
         toast.error('A IA não retornou sugestões de títulos. Tente novamente.')
+        setRetryCount((prev) => prev + 1)
       }
-    } catch (err) {
-      toast.error('Serviço de IA indisponível no momento. Tente novamente mais tarde.')
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Serviço de IA indisponível no momento. Tente novamente mais tarde.'
+
+      if (errorMsg.includes('Configuração de IA pendente')) {
+        toast.error(
+          'Configuração de IA pendente. Por favor, verifique as chaves de acesso nas configurações do sistema.',
+        )
+      } else if (errorMsg === 'Timeout') {
+        toast.error('A resposta demorou muito. Tente novamente.')
+      } else {
+        toast.error(errorMsg)
+      }
+      setRetryCount((prev) => prev + 1)
       console.error(err)
     } finally {
       setLoadingTitles(false)
@@ -83,12 +105,24 @@ export function AiCampaignModal({
     setLoadingCampaign(true)
     try {
       const bestDays = await getBestPostingDays(activeEmpresaId)
-      await generateAICampaign(selectedTitles, selectedNetworks, bestDays)
+
+      const fetchPromise = generateAICampaign(selectedTitles, selectedNetworks, bestDays)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 30000),
+      )
+
+      await Promise.race([fetchPromise, timeoutPromise])
+
       toast.success('Campanha gerada com sucesso! Rascunhos criados.')
       onClose()
       onSuccess()
-    } catch (err) {
-      toast.error('Erro ao gerar campanha. Tente novamente.')
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Erro ao gerar campanha. Tente novamente.'
+      if (errorMsg === 'Timeout') {
+        toast.error('A geração demorou muito. Tente novamente.')
+      } else {
+        toast.error('Erro ao gerar campanha. Tente novamente.')
+      }
       console.error(err)
     } finally {
       setLoadingCampaign(false)
@@ -138,7 +172,13 @@ export function AiCampaignModal({
                 disabled={loadingTitles || !theme.trim()}
                 className="bg-purple-600 hover:bg-purple-700 text-white shrink-0"
               >
-                {loadingTitles ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Gerar Títulos'}
+                {loadingTitles ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : retryCount > 0 && titles.length === 0 ? (
+                  'Tentar Novamente'
+                ) : (
+                  'Gerar Títulos'
+                )}
               </Button>
             </div>
           </div>
@@ -146,7 +186,7 @@ export function AiCampaignModal({
           {titles.length > 0 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
               <div className="space-y-2">
-                <Label>1. Selecione os Títulos (mín. 1)</Label>
+                <Label>1. Selecione os Títulos (pelo menos 1)</Label>
                 <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto p-1">
                   {titles.map((title, i) => {
                     const isSelected = selectedTitles.includes(title)

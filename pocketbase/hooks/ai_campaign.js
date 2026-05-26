@@ -28,22 +28,30 @@ routerAdd(
     const empresaId = e.auth.getString('empresa_id')
     const userId = e.auth.id
 
-    if (titles.length !== 2) {
-      return e.badRequestError('Selecione exatamente 2 títulos.')
+    if (titles.length === 0) {
+      return e.badRequestError('Selecione pelo menos 1 título.')
     }
 
-    const getNextDate = (dayOfWeek) => {
+    const getNextDate = (dayOfWeek, weekOffset) => {
       let d = new Date()
-      d.setDate(d.getDate() + ((dayOfWeek + 7 - d.getDay()) % 7 || 7))
+      d.setDate(d.getDate() + ((dayOfWeek + 7 - d.getDay()) % 7 || 7) + weekOffset * 7)
       d.setHours(10, 0, 0, 0)
       return d
     }
 
-    const dates = [getNextDate(bestDays[0]), getNextDate(bestDays[1])]
+    const dates = titles.map((_, i) => {
+      const dayOfWeek = bestDays[i % bestDays.length] || 1
+      const weekOffset = Math.floor(i / (bestDays.length || 1))
+      return getNextDate(dayOfWeek, weekOffset)
+    })
 
-    // Make sure they are not the same exact day if bestDays happened to be [1, 1]
-    if (dates[0].getTime() === dates[1].getTime()) {
-      dates[1].setDate(dates[1].getDate() + 3)
+    // Ensure no duplicate dates by shifting duplicates
+    for (let i = 1; i < dates.length; i++) {
+      for (let j = 0; j < i; j++) {
+        if (dates[i].getTime() === dates[j].getTime()) {
+          dates[i].setDate(dates[i].getDate() + 1)
+        }
+      }
     }
 
     const postsToSave = []

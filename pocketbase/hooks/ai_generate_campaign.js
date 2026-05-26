@@ -7,8 +7,8 @@ routerAdd(
     const networks = body.networks || []
     const bestDays = body.bestDays || [1, 4]
 
-    if (titles.length !== 2) {
-      throw new BadRequestError('Selecione exatamente 2 títulos.')
+    if (titles.length === 0) {
+      throw new BadRequestError('Selecione pelo menos 1 título.')
     }
 
     let empresaId = ''
@@ -33,15 +33,29 @@ routerAdd(
       return resultDate
     }
 
-    const day1 = getNextDay(today, bestDays[0])
-    const day2 = getNextDay(today, bestDays[1])
-    const scheduleDates = [day1, day2]
+    const scheduleDates = []
+    for (let i = 0; i < titles.length; i++) {
+      const baseDay = bestDays[i % bestDays.length] || 1
+      const d = getNextDay(today, baseDay)
+      const weekOffset = Math.floor(i / (bestDays.length || 1))
+      d.setDate(d.getDate() + weekOffset * 7)
+      scheduleDates.push(d)
+    }
+
+    // Shift duplicates
+    for (let i = 1; i < scheduleDates.length; i++) {
+      for (let j = 0; j < i; j++) {
+        if (scheduleDates[i].getTime() === scheduleDates[j].getTime()) {
+          scheduleDates[i].setDate(scheduleDates[i].getDate() + 1)
+        }
+      }
+    }
 
     $app.runInTransaction((txApp) => {
       const postsCol = txApp.findCollectionByNameOrId('posts')
       const metricsCol = txApp.findCollectionByNameOrId('metrics_posts')
 
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < titles.length; i++) {
         const title = titles[i]
         const blogDate = scheduleDates[i]
 
