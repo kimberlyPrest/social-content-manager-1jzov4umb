@@ -22,8 +22,12 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
 } from 'lucide-react'
 import { syncInstagramPosts } from '@/services/api'
+import { getSponsoredMetrics, SponsoredMetric } from '@/services/sponsored_metrics'
 import {
   Dialog,
   DialogContent,
@@ -82,6 +86,10 @@ export default function Integrations() {
   const [integracoes, setIntegracoes] = useState<IntegracaoRede[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+
+  const [sponsoredMetrics, setSponsoredMetrics] = useState<SponsoredMetric[]>([])
+  const [loadingSponsored, setLoadingSponsored] = useState(true)
+
   const { user } = useAuth()
 
   const [connectModalOpen, setConnectModalOpen] = useState(false)
@@ -153,6 +161,13 @@ export default function Integrations() {
   const loadData = useCallback(() => {
     setLoading(true)
     setError(false)
+
+    setLoadingSponsored(true)
+    getSponsoredMetrics()
+      .then((data) => setSponsoredMetrics(data))
+      .catch(() => {})
+      .finally(() => setLoadingSponsored(false))
+
     getIntegracoes()
       .then(async (data) => {
         const now = new Date()
@@ -185,6 +200,12 @@ export default function Integrations() {
   useRealtime('integracao_redes', () => {
     getIntegracoes()
       .then((data) => setIntegracoes(data))
+      .catch(() => {})
+  })
+
+  useRealtime('sponsored_metrics', () => {
+    getSponsoredMetrics()
+      .then((data) => setSponsoredMetrics(data))
       .catch(() => {})
   })
 
@@ -445,6 +466,80 @@ export default function Integrations() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <div className="mt-12 space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Social Patrocinado</h2>
+          <p className="text-muted-foreground">
+            Métricas de campanhas pagas sincronizadas via automações (Zapier/Make).
+          </p>
+        </div>
+
+        {loadingSponsored ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[120px] rounded-xl" />
+            ))}
+          </div>
+        ) : sponsoredMetrics.length === 0 ? (
+          <Alert className="bg-muted/50 border-none">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Nenhuma métrica de campanha patrocinada encontrada.</AlertDescription>
+          </Alert>
+        ) : (
+          <div className="space-y-8">
+            {sponsoredMetrics.map((campaign) => (
+              <div key={campaign.id} className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">{campaign.site_name}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {campaign.metrics.map((m, idx) => (
+                    <Card
+                      key={idx}
+                      className="shadow-subtle hover:shadow-elevation transition-all duration-300"
+                    >
+                      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          {m.metric_name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {m.metric_name.toLowerCase().includes('investimento') ||
+                          m.metric_name.toLowerCase().includes('cpc')
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(m.value)
+                            : new Intl.NumberFormat('pt-BR').format(m.value)}
+                        </div>
+                        <div className="flex items-center gap-1 mt-1 text-xs">
+                          {m.trend === 'subindo' ? (
+                            <span className="text-emerald-500 flex items-center font-medium">
+                              <ArrowUpRight className="w-3 h-3 mr-1" />
+                              {m.trend_percentage}%
+                            </span>
+                          ) : m.trend === 'descendo' ? (
+                            <span className="text-destructive flex items-center font-medium">
+                              <ArrowDownRight className="w-3 h-3 mr-1" />
+                              {m.trend_percentage}%
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground flex items-center font-medium">
+                              <Minus className="w-3 h-3 mr-1" />
+                              {m.trend_percentage}%
+                            </span>
+                          )}
+                          <span className="text-muted-foreground">vs último período</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
