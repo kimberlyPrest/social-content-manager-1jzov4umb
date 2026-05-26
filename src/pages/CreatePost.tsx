@@ -295,7 +295,12 @@ export default function CreatePost() {
         setTimeout(() => navigate('/posts'), 2000)
       }
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao salvar post. Tente novamente.')
+      const msgs = error?.response?.data
+        ? Object.values(error.response.data)
+            .map((e: any) => e.message)
+            .join(', ')
+        : ''
+      toast.error(msgs || error.message || 'Erro ao salvar post. Tente novamente.')
     }
   }
 

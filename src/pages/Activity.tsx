@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { getActivities, getCompanyUsers } from '@/services/api'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useEmpresaContext } from '@/hooks/use-empresa-context'
 
 const TYPE_ICONS: Record<string, any> = {
   post: { icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -53,6 +54,7 @@ const getCategory = (tipo: string) => {
 }
 
 export default function ActivityPage() {
+  const { activeEmpresaId } = useEmpresaContext()
   const [activities, setActivities] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
 
@@ -65,7 +67,10 @@ export default function ActivityPage() {
 
   const loadData = async () => {
     try {
-      const [actsData, usersData] = await Promise.all([getActivities(), getCompanyUsers()])
+      const [actsData, usersData] = await Promise.all([
+        getActivities('', activeEmpresaId),
+        getCompanyUsers(activeEmpresaId),
+      ])
       setActivities(actsData)
       setUsers(usersData)
     } catch (err) {
@@ -75,7 +80,7 @@ export default function ActivityPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [activeEmpresaId])
 
   useRealtime('atividades', loadData)
 
@@ -153,10 +158,16 @@ export default function ActivityPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative border-l-2 border-muted ml-4 md:ml-6 space-y-8 py-4">
+          <div className="relative ml-4 md:ml-6 space-y-8 py-4">
+            {filtered.length > 0 && (
+              <div className="absolute top-0 bottom-0 left-[0px] border-l-2 border-muted" />
+            )}
             {filtered.length === 0 ? (
-              <div className="pl-6 text-center py-10 text-muted-foreground">
-                Nenhuma atividade encontrada com estes filtros.
+              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-white/50 dark:bg-black/50 ml-6">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <Filter className="h-8 w-8 text-muted-foreground/50" />
+                  <p>Nenhuma atividade encontrada.</p>
+                </div>
               </div>
             ) : (
               filtered.map((act) => {

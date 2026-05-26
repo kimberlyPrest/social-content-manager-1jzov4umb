@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import pb from '@/lib/pocketbase/client'
 import { RecordModel } from 'pocketbase'
@@ -83,6 +83,18 @@ export default function TeamPage() {
   const handleInvite = async () => {
     setErrors({})
     setSubmitting(true)
+
+    if (!inviteData.name.trim()) {
+      setErrors((prev) => ({ ...prev, name: 'Nome é obrigatório' }))
+      setSubmitting(false)
+      return
+    }
+    if (!inviteData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteData.email)) {
+      setErrors((prev) => ({ ...prev, email: 'E-mail inválido ou obrigatório' }))
+      setSubmitting(false)
+      return
+    }
+
     try {
       const password = Math.random().toString(36).slice(-8) + 'A@1'
 
@@ -96,6 +108,17 @@ export default function TeamPage() {
         ativo: true,
       })
 
+      try {
+        await pb.collection('atividades').create({
+          empresa_id: user?.empresa_id,
+          usuario_id: user?.id,
+          tipo: 'membro_adicionado',
+          descricao: `Adicionou o membro: ${inviteData.name || inviteData.email} (${inviteData.role})`,
+        })
+      } catch (err) {
+        console.error('Erro ao registrar atividade', err)
+      }
+
       setMembers((prev) => [newMember, ...prev])
       toast.success(`Convite enviado para ${inviteData.email}!`)
       setIsInviteOpen(false)
@@ -105,7 +128,7 @@ export default function TeamPage() {
       if (Object.keys(fieldErrors).length > 0) {
         setErrors(fieldErrors)
       } else {
-        toast.error('Erro ao enviar convite.')
+        toast.error('Erro ao enviar convite. Talvez o email já esteja em uso.')
       }
     } finally {
       setSubmitting(false)
@@ -115,11 +138,24 @@ export default function TeamPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Tem certeza que deseja remover este membro?')) return
     try {
+      const memberToRemove = members.find((m) => m.id === id)
       await pb.collection('users').delete(id)
+
+      try {
+        await pb.collection('atividades').create({
+          empresa_id: user?.empresa_id,
+          usuario_id: user?.id,
+          tipo: 'membro_removido',
+          descricao: `Removeu o membro: ${memberToRemove?.name || memberToRemove?.email}`,
+        })
+      } catch (err) {
+        console.error('Erro ao registrar atividade', err)
+      }
+
       setMembers((prev) => prev.filter((m) => m.id !== id))
       toast.success('Membro removido com sucesso.')
     } catch (err) {
-      toast.error('Erro ao remover membro.')
+      toast.error('Erro ao remover membro. Verifique suas permissões.')
     }
   }
 
@@ -185,7 +221,7 @@ export default function TeamPage() {
           <p className="text-muted-foreground mt-1">Gerencie os membros da sua equipe.</p>
         </div>
 
-        {isMaster && (
+        {(isMaster || isAdmin) && (
           <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -362,7 +398,7 @@ export default function TeamPage() {
                   >
                     <Pencil className="h-4 w-4 text-slate-600" />
                   </Button>
-                  {isMaster && member.id !== user?.id && (
+                  {(isMaster || isAdmin) && member.id !== user?.id && (
                     <Button
                       variant="destructive"
                       size="icon"
@@ -379,8 +415,14 @@ export default function TeamPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-white/50">
-          Nenhum membro encontrado.
+        <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg bg-white/50 dark:bg-black/50">
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <Users className="h-10 w-10 text-muted-foreground/50" />
+            <h3 className="font-semibold text-lg text-slate-700 dark:text-slate-300">
+              Nenhum membro encontrado
+            </h3>
+            <p className="text-sm">Convide pessoas para colaborarem na sua equipe.</p>
+          </div>
         </div>
       )}
     </div>
