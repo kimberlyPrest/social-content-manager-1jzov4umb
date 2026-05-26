@@ -4,14 +4,20 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud, Sparkles } from 'lucide-react'
+import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud, Sparkles, Film } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
-import { createPostWithFiles, getPost, updatePostWithFiles } from '@/services/api'
+import {
+  createPostWithFiles,
+  getPost,
+  updatePostWithFiles,
+  getCategorias,
+  getTags,
+} from '@/services/api'
 import { AiCampaignModal } from '@/components/posts/AiCampaignModal'
 import { getIntegracoes } from '@/services/integracao_redes'
 import pb from '@/lib/pocketbase/client'
-import { SocialPreviews } from '@/components/SocialPreviews'
+import { PostPreview } from '@/components/posts/PostPreview'
 import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
@@ -20,6 +26,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -39,9 +53,11 @@ const NETWORKS = [
 
 const formSchema = z
   .object({
-    titulo: z.string().max(100, 'Máximo 100 caracteres').optional(),
+    titulo: z.string().min(1, 'O título é obrigatório').max(100, 'Máximo 100 caracteres'),
     conteudo: z.string().max(5000, 'Máximo 5000 caracteres').optional(),
     redes_sociais: z.array(z.string()).optional(),
+    categoria_id: z.string().optional(),
+    tags_list: z.array(z.string()).optional(),
     agendar: z.enum(['now', 'later']),
     agendado_para: z.string().optional(),
   })
@@ -65,8 +81,12 @@ export default function CreatePost() {
   const { activeEmpresaId, activeEmpresa } = useEmpresaContext()
 
   const [files, setFiles] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [existingImages, setExistingImages] = useState<string[]>([])
+  const [previewMedia, setPreviewMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([])
+  const [existingMedia, setExistingMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([])
+
+  const [categorias, setCategorias] = useState<any[]>([])
+  const [availableTags, setAvailableTags] = useState<any[]>([])
+
   const [isDragging, setIsDragging] = useState(false)
   const [submitAction, setSubmitAction] = useState<'draft' | 'publish'>('draft')
   const [loadingPost, setLoadingPost] = useState(isEditMode)
@@ -80,6 +100,8 @@ export default function CreatePost() {
       titulo: '',
       conteudo: '',
       redes_sociais: [],
+      categoria_id: '',
+      tags_list: [],
       agendar: 'now',
       agendado_para: '',
     },
@@ -97,22 +119,28 @@ export default function CreatePost() {
   }, [user, navigate])
 
   useEffect(() => {
-    getIntegracoes()
-      .then((res) => {
-        const connected = res.filter((i) => i.status === 'conectado').map((i) => i.rede_social)
+    const loadData = async () => {
+      try {
+        const [ints, cats, tgs] = await Promise.all([
+          getIntegracoes(),
+          getCategorias(activeEmpresaId),
+          getTags(activeEmpresaId),
+        ])
+        const connected = ints.filter((i) => i.status === 'conectado').map((i) => i.rede_social)
         setConnectedNetworks(connected)
-      })
-      .catch((err) => console.error('Erro ao carregar integrações', err))
+        setCategorias(cats)
+        setAvailableTags(tgs)
+      } catch (err) {
+        console.error('Erro ao carregar dados', err)
+      }
+    }
+    loadData()
   }, [activeEmpresaId])
 
   useEffect(() => {
     if (isEditMode && id) {
-      console.log(
-        `[Bug Scanner] Action: Editar Post, PostID: ${id}, Timestamp: ${new Date().toISOString()}`,
-      )
       getPost(id)
         .then((post) => {
-          console.log(`[Bug Scanner] Data fetched for PostID: ${id}`, post)
           let localDateStr = ''
           if (post.agendado_para) {
             const d = new Date(post.agendado_para)
@@ -125,17 +153,28 @@ export default function CreatePost() {
             titulo: post.titulo || '',
             conteudo: post.conteudo || '',
             redes_sociais: post.redes_sociais || [],
+            categoria_id: post.categoria_id || '',
+            tags_list: post.tags_list || [],
             agendar: post.status === 'agendado' && localDateStr ? 'later' : 'now',
             agendado_para: localDateStr,
           })
+
+          const loadedMedia: { url: string; type: 'image' | 'video' }[] = []
           if (post.imagens) {
             const imagesArray = Array.isArray(post.imagens) ? post.imagens : [post.imagens]
-            const urls = imagesArray.map((img: string) => pb.files.getURL(post, img))
-            setExistingImages(urls)
+            imagesArray.forEach((img: string) =>
+              loadedMedia.push({ url: pb.files.getURL(post, img), type: 'image' }),
+            )
           }
+          if (post.videos) {
+            const videosArray = Array.isArray(post.videos) ? post.videos : [post.videos]
+            videosArray.forEach((vid: string) =>
+              loadedMedia.push({ url: pb.files.getURL(post, vid), type: 'video' }),
+            )
+          }
+          setExistingMedia(loadedMedia)
         })
         .catch((err) => {
-          console.error(`[Bug Scanner] Error fetching PostID: ${id}`, err)
           toast.error('Erro ao carregar post para edição.')
           navigate('/dashboard')
         })
@@ -144,17 +183,25 @@ export default function CreatePost() {
   }, [id, isEditMode, navigate, form])
 
   useEffect(() => {
-    const urls = files.map((file) => URL.createObjectURL(file))
-    setPreviewUrls(urls)
-    return () => urls.forEach((url) => URL.revokeObjectURL(url))
+    const urls = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('video/') ? ('video' as const) : ('image' as const),
+    }))
+    setPreviewMedia(urls)
+    return () => urls.forEach((m) => URL.revokeObjectURL(m.url))
   }, [files])
 
   const handleFiles = (selectedFiles: File[]) => {
     const validFiles = selectedFiles.filter(
-      (f) => f.size <= 5 * 1024 * 1024 && f.type.startsWith('image/'),
+      (f) =>
+        (f.size <= 5 * 1024 * 1024 && f.type.startsWith('image/')) ||
+        (f.size <= 50 * 1024 * 1024 && f.type.startsWith('video/')),
     )
-    if (validFiles.length < selectedFiles.length)
-      toast.warning('Algumas imagens foram ignoradas (max 5MB ou formato inválido).')
+    if (validFiles.length < selectedFiles.length) {
+      toast.warning(
+        'Alguns arquivos foram ignorados (imagens max 5MB, vídeos max 50MB ou formato inválido).',
+      )
+    }
     setFiles((prev) => [...prev, ...validFiles].slice(0, 5))
   }
 
@@ -163,20 +210,16 @@ export default function CreatePost() {
 
     try {
       if (submitAction === 'publish') {
-        if (!values.titulo) {
-          toast.error('Preencha o título')
-          return
-        }
         if (!values.conteudo) {
-          toast.error('Preencha a descrição')
+          toast.error('Preencha a descrição para publicar')
           return
         }
-        if (files.length === 0 && existingImages.length === 0) {
-          toast.error('Adicione uma imagem')
+        if (files.length === 0 && existingMedia.length === 0) {
+          toast.error('Adicione uma mídia para publicar')
           return
         }
         if (!values.redes_sociais || values.redes_sociais.length === 0) {
-          toast.error('Selecione pelo menos uma rede')
+          toast.error('Selecione pelo menos uma rede para publicar')
           return
         }
 
@@ -190,16 +233,16 @@ export default function CreatePost() {
           )
           return
         }
-      }
 
-      const isOverLimit = watchRedes.some((n) => {
-        const limit = n === 'facebook' ? 63206 : n === 'linkedin' ? 3000 : 2200
-        return watchConteudo.length > limit
-      })
+        const isOverLimit = watchRedes.some((n) => {
+          const limit = n === 'facebook' ? 63206 : n === 'linkedin' ? 3000 : 2200
+          return watchConteudo.length > limit
+        })
 
-      if (isOverLimit && submitAction !== 'draft') {
-        toast.error('Conteúdo excede o limite de uma ou mais redes selecionadas.')
-        return
+        if (isOverLimit) {
+          toast.error('Conteúdo excede o limite de uma ou mais redes selecionadas.')
+          return
+        }
       }
 
       let status = 'rascunho'
@@ -213,15 +256,21 @@ export default function CreatePost() {
             : new Date().toISOString()
       }
 
-      const payload = {
+      const payload: any = {
         titulo: values.titulo,
-        conteudo: values.conteudo,
+        conteudo: values.conteudo || '',
         redes_sociais: values.redes_sociais || [],
+        tags_list: values.tags_list || [],
         status,
+        status_aprovacao: 'nenhum',
         criador_id: user.id,
         empresa_id: activeEmpresaId || user.empresa_id,
         agendado_para,
         agendamento_tipo: values.agendar === 'now' ? 'agora' : 'depois',
+      }
+
+      if (values.categoria_id) {
+        payload.categoria_id = values.categoria_id
       }
 
       let postIdToPublish = id
@@ -246,18 +295,7 @@ export default function CreatePost() {
         setTimeout(() => navigate('/posts'), 2000)
       }
     } catch (error: any) {
-      const respData = error?.response?.data || {}
-      const hasRelError =
-        respData.empresa_id?.code === 'validation_missing_rel_records' ||
-        respData.criador_id?.code === 'validation_missing_rel_records'
-
-      if (hasRelError) {
-        toast.error(
-          'Erro de integridade de dados. Por favor, atualize a página para recarregar sua sessão ou contate o suporte.',
-        )
-      } else {
-        toast.error(error.message || 'Erro ao salvar post. Tente novamente.')
-      }
+      toast.error(error.message || 'Erro ao salvar post. Tente novamente.')
     }
   }
 
@@ -296,11 +334,11 @@ export default function CreatePost() {
             <p className="text-muted-foreground">
               {isEditMode
                 ? 'Atualize as informações do seu post.'
-                : 'Crie, visualize e agende seu conteúdo.'}
+                : 'Crie um rascunho, visualize e agende seu conteúdo.'}
             </p>
             {activeEmpresa && (
               <p className="text-xs text-muted-foreground mt-1">
-                Publicando em:{' '}
+                Criando para:{' '}
                 <span className="font-medium text-foreground">{activeEmpresa.nome}</span>
               </p>
             )}
@@ -309,7 +347,6 @@ export default function CreatePost() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Editor */}
         <div className="lg:col-span-7 space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -317,11 +354,207 @@ export default function CreatePost() {
                 <CardContent className="pt-6 space-y-6">
                   <FormField
                     control={form.control}
+                    name="titulo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-base">Título do Post *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Lançamento de Inverno" {...field} />
+                        </FormControl>
+                        <FormDescription className="flex justify-between">
+                          <span>Identificação interna na plataforma (Obrigatório).</span>
+                          <span>{(field.value || '').length}/100</span>
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="categoria_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold">Categoria</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categorias.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {availableTags.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="tags_list"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold">Tags</FormLabel>
+                          <div className="flex flex-wrap gap-2">
+                            {availableTags.map((tag) => {
+                              const isSelected = field.value?.includes(tag.id)
+                              return (
+                                <Badge
+                                  key={tag.id}
+                                  variant={isSelected ? 'default' : 'outline'}
+                                  className="cursor-pointer"
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      field.onChange(field.value?.filter((t) => t !== tag.id))
+                                    } else {
+                                      field.onChange([...(field.value || []), tag.id])
+                                    }
+                                  }}
+                                >
+                                  {tag.nome}
+                                </Badge>
+                              )
+                            })}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="conteudo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-base">
+                          Conteúdo da Publicação
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Escreva a legenda do post aqui..."
+                            className="min-h-[200px] resize-y"
+                            {...field}
+                          />
+                        </FormControl>
+                        <div className="flex justify-end text-xs text-muted-foreground">
+                          {watchConteudo.length}/5000
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="space-y-3">
+                    <FormLabel className="font-semibold text-base">
+                      Mídia (Imagens/Vídeos, máx 5 arquivos)
+                    </FormLabel>
+                    <div
+                      className={cn(
+                        'border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer',
+                        isDragging
+                          ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/20'
+                          : 'border-border',
+                      )}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        setIsDragging(true)
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        setIsDragging(false)
+                        handleFiles(Array.from(e.dataTransfer.files))
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        multiple
+                        accept="image/png, image/jpeg, image/webp, video/mp4, video/quicktime"
+                        onChange={(e) => {
+                          if (e.target.files) handleFiles(Array.from(e.target.files))
+                        }}
+                      />
+                      <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
+                      <p className="text-sm font-medium">Arraste e solte suas mídias aqui</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        JPG/PNG/WEBP (máx 5MB) ou MP4/MOV (máx 50MB)
+                      </p>
+                    </div>
+
+                    {(previewMedia.length > 0 || existingMedia.length > 0) && (
+                      <div className="flex flex-wrap gap-4 mt-4">
+                        {existingMedia.map((media, idx) => (
+                          <div
+                            key={`existing-${idx}`}
+                            className="relative group w-24 h-24 rounded-lg overflow-hidden border shadow-sm bg-muted flex items-center justify-center"
+                          >
+                            {media.type === 'video' ? (
+                              <Film className="w-8 h-8 text-muted-foreground" />
+                            ) : (
+                              <img
+                                src={media.url}
+                                alt="existing preview"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                        ))}
+                        {previewMedia.map((media, i) => (
+                          <div
+                            key={media.url}
+                            className="relative group w-24 h-24 rounded-lg overflow-hidden border shadow-sm bg-muted flex items-center justify-center"
+                          >
+                            {media.type === 'video' ? (
+                              <Film className="w-8 h-8 text-muted-foreground" />
+                            ) : (
+                              <img
+                                src={media.url}
+                                alt="preview"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setFiles(files.filter((_, index) => index !== i))}
+                              className="absolute top-1 right-1 bg-black/60 hover:bg-black p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        {files.length + existingMedia.length < 5 && (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-24 h-24 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
+                          >
+                            <ImagePlus className="w-6 h-6" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <FormField
+                    control={form.control}
                     name="redes_sociais"
                     render={() => (
-                      <FormItem>
+                      <FormItem className="pt-4 border-t">
                         <FormLabel className="text-base font-semibold">
-                          1. Onde você quer publicar?
+                          Onde você quer publicar? (Opcional para Rascunhos)
                         </FormLabel>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
                           {NETWORKS.map((network) => {
@@ -335,7 +568,9 @@ export default function CreatePost() {
                                   <FormItem
                                     className={cn(
                                       'flex flex-row items-center space-x-2 space-y-0 rounded-md border p-3',
-                                      isConnected ? 'bg-muted/20' : 'bg-muted/5 opacity-60',
+                                      isConnected
+                                        ? 'bg-muted/20 hover:bg-muted/40 transition-colors'
+                                        : 'bg-muted/5 opacity-60',
                                     )}
                                   >
                                     <FormControl>
@@ -379,127 +614,6 @@ export default function CreatePost() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="titulo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-semibold">2. Título (Opcional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Lançamento de Inverno" {...field} />
-                        </FormControl>
-                        <FormDescription className="flex justify-between">
-                          <span>Identificação interna na plataforma.</span>
-                          <span>{(field.value || '').length}/100</span>
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="conteudo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-semibold">3. Conteúdo da Publicação</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Escreva a legenda do post aqui..."
-                            className="min-h-[200px] resize-y"
-                            {...field}
-                          />
-                        </FormControl>
-                        <div className="flex justify-end text-xs text-muted-foreground">
-                          {watchConteudo.length}/5000
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="space-y-3">
-                    <FormLabel className="font-semibold">
-                      4. Mídia (Max 5MB/imagem, até 5 imagens)
-                    </FormLabel>
-                    <div
-                      className={cn(
-                        'border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer',
-                        isDragging
-                          ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/20'
-                          : 'border-border',
-                      )}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        setIsDragging(true)
-                      }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={(e) => {
-                        e.preventDefault()
-                        setIsDragging(false)
-                        handleFiles(Array.from(e.dataTransfer.files))
-                      }}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        multiple
-                        accept="image/png, image/jpeg, image/webp"
-                        onChange={(e) => {
-                          if (e.target.files) handleFiles(Array.from(e.target.files))
-                        }}
-                      />
-                      <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium">Arraste e solte suas imagens aqui</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ou clique para procurar no seu computador
-                      </p>
-                    </div>
-
-                    {(previewUrls.length > 0 || existingImages.length > 0) && (
-                      <div className="flex flex-wrap gap-4 mt-4">
-                        {existingImages.map((url) => (
-                          <div
-                            key={url}
-                            className="relative group w-24 h-24 rounded-lg overflow-hidden border shadow-sm"
-                          >
-                            <img
-                              src={url}
-                              alt="existing preview"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))}
-                        {previewUrls.map((url, i) => (
-                          <div
-                            key={url}
-                            className="relative group w-24 h-24 rounded-lg overflow-hidden border shadow-sm"
-                          >
-                            <img src={url} alt="preview" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setFiles(files.filter((_, index) => index !== i))}
-                              className="absolute top-1 right-1 bg-black/60 hover:bg-black p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                        {files.length + existingImages.length < 5 && (
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="w-24 h-24 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
-                          >
-                            <ImagePlus className="w-6 h-6" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
                   <div className="space-y-4 pt-4 border-t">
                     <FormField
                       control={form.control}
@@ -507,7 +621,7 @@ export default function CreatePost() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-semibold text-base">
-                            5. Quando publicar?
+                            Quando publicar?
                           </FormLabel>
                           <FormControl>
                             <RadioGroup
@@ -520,7 +634,7 @@ export default function CreatePost() {
                                   <RadioGroupItem value="now" />
                                 </FormControl>
                                 <FormLabel className="font-normal cursor-pointer">
-                                  Publicar agora
+                                  Publicar agora (Ao confirmar Publicação)
                                 </FormLabel>
                               </FormItem>
                               <FormItem className="flex items-center space-x-3 space-y-0">
@@ -565,7 +679,7 @@ export default function CreatePost() {
                       {form.formState.isSubmitting && submitAction === 'draft' ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : null}
-                      Salvar como rascunho
+                      Salvar como Rascunho
                     </Button>
                     <Button
                       type="submit"
@@ -596,19 +710,23 @@ export default function CreatePost() {
           onSuccess={() => navigate('/posts')}
         />
 
-        {/* Right Column: Preview */}
         <div className="lg:col-span-5 sticky top-6 h-[calc(100vh-6rem)]">
           <Card className="border-none shadow-elevation h-full flex flex-col bg-muted/10">
             <CardContent className="p-6 flex-1 flex flex-col">
               <h3 className="font-semibold text-lg mb-4 text-purple-950 dark:text-purple-100">
-                Preview
+                Preview Dinâmico
               </h3>
-              <SocialPreviews
-                networks={watchRedes}
-                content={watchConteudo}
-                title={form.watch('titulo')}
-                images={[...existingImages, ...previewUrls]}
-                companyName={user?.expand?.empresa_id?.nome || 'Supremo Aroma'}
+              <PostPreview
+                redes={watchRedes.length > 0 ? watchRedes : ['genérico']}
+                conteudo={watchConteudo}
+                titulo={form.watch('titulo')}
+                images={[...existingMedia, ...previewMedia].map((m) => m.url)}
+                authorName={user?.expand?.empresa_id?.nome || 'Minha Empresa'}
+                authorAvatar={
+                  user?.expand?.empresa_id?.logo_url
+                    ? pb.files.getURL(user.expand.empresa_id, user.expand.empresa_id.logo_url)
+                    : undefined
+                }
               />
             </CardContent>
           </Card>

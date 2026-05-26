@@ -200,7 +200,7 @@ export const updatePostWithFiles = async (id: string, data: any, files: File[]) 
 
   for (const key in data) {
     if (data[key] !== undefined && data[key] !== null) {
-      if (key === 'redes_sociais') {
+      if (key === 'redes_sociais' || key === 'tags_list') {
         formData.append(key, JSON.stringify(data[key]))
       } else if (data[key] instanceof Date) {
         formData.append(key, data[key].toISOString())
@@ -211,7 +211,11 @@ export const updatePostWithFiles = async (id: string, data: any, files: File[]) 
   }
 
   files.forEach((file) => {
-    formData.append('imagens', file)
+    if (file.type.startsWith('video/')) {
+      formData.append('videos', file)
+    } else {
+      formData.append('imagens', file)
+    }
   })
 
   const record = await pb.collection('posts').update(id, formData)
@@ -248,7 +252,7 @@ export const createPostWithFiles = async (data: any, files: File[]) => {
 
   for (const key in data) {
     if (data[key] !== undefined && data[key] !== null) {
-      if (key === 'redes_sociais') {
+      if (key === 'redes_sociais' || key === 'tags_list') {
         formData.append(key, JSON.stringify(data[key]))
       } else if (data[key] instanceof Date) {
         formData.append(key, data[key].toISOString())
@@ -259,7 +263,11 @@ export const createPostWithFiles = async (data: any, files: File[]) => {
   }
 
   files.forEach((file) => {
-    formData.append('imagens', file)
+    if (file.type.startsWith('video/')) {
+      formData.append('videos', file)
+    } else {
+      formData.append('imagens', file)
+    }
   })
 
   const record = await pb.collection('posts').create(formData)
@@ -367,4 +375,14 @@ export const getCompanyUsers = async (empresaId?: string) => {
   return pb.collection('users').getFullList({
     filter: `empresa_id = "${targetId}"`,
   })
+}
+
+export const getCategorias = async (empresaId?: string) => {
+  const filter = empresaId ? `empresa_id = "${empresaId}"` : ''
+  return pb.collection('categorias_posts').getFullList({ filter, sort: 'nome' })
+}
+
+export const getTags = async (empresaId?: string) => {
+  const filter = empresaId ? `empresa_id = "${empresaId}"` : ''
+  return pb.collection('tags').getFullList({ filter, sort: 'nome' })
 }

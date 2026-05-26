@@ -22,7 +22,9 @@ export function ImageUploader({
     (e: React.DragEvent) => {
       e.preventDefault()
       setIsDragging(false)
-      const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+      const files = Array.from(e.dataTransfer.files).filter(
+        (f) => f.type.startsWith('image/') || f.type.startsWith('video/'),
+      )
       addFiles(files)
     },
     [images, existingImages],
@@ -42,8 +44,10 @@ export function ImageUploader({
     }
 
     const validFiles = files.filter((f) => {
-      if (f.size > 5 * 1024 * 1024) {
-        toast.error(`A imagem ${f.name} excede o limite de 5MB`)
+      const isVideo = f.type.startsWith('video/')
+      const limit = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024
+      if (f.size > limit) {
+        toast.error(`O arquivo ${f.name} excede o limite de ${isVideo ? '50MB' : '5MB'}`)
         return false
       }
       return true
@@ -76,13 +80,13 @@ export function ImageUploader({
         onClick={() => document.getElementById('image-upload')?.click()}
       >
         <UploadCloud className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm font-medium">Clique ou arraste imagens aqui</p>
-        <p className="text-xs text-muted-foreground">JPG, PNG, WebP até 5MB (máx 5)</p>
+        <p className="text-sm font-medium">Clique ou arraste mídias aqui</p>
+        <p className="text-xs text-muted-foreground">Imagens (máx 5MB), Vídeos (máx 50MB)</p>
         <input
           id="image-upload"
           type="file"
           multiple
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
           className="hidden"
           onChange={handleChange}
         />

@@ -8,10 +8,11 @@ const LIMITS: Record<string, number> = {
   instagram: 2200,
   linkedin: 3000,
   tiktok: 2200,
+  genérico: 5000,
 }
 
 interface PostPreviewProps {
-  titulo: string
+  titulo?: string
   conteudo: string
   redes: string[]
   images: string[]
@@ -28,27 +29,15 @@ export function PostPreview({
 }: PostPreviewProps) {
   const imageUrl = images[0] || 'https://img.usecurling.com/p/600/400?q=placeholder&color=purple'
 
-  if (redes.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] border-2 border-dashed rounded-xl bg-muted/20 text-muted-foreground p-8 text-center">
-        <div className="bg-primary/10 p-4 rounded-full mb-4">
-          <Share2 className="h-8 w-8 text-primary" />
-        </div>
-        <p className="font-medium text-lg mb-2">Sem preview disponível</p>
-        <p className="text-sm">
-          Selecione pelo menos uma rede social para visualizar como seu post ficará.
-        </p>
-      </div>
-    )
-  }
+  const activeRedes = redes.length > 0 ? redes : ['genérico']
 
   const renderContent = (network: string) => {
-    const limit = LIMITS[network]
+    const limit = LIMITS[network] || 5000
     const isOverLimit = conteudo.length > limit
 
     return (
       <div className="space-y-4 animate-fade-in">
-        {isOverLimit && (
+        {isOverLimit && network !== 'genérico' && (
           <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
             Conteúdo muito longo para {network}. Reduza para {limit} caracteres. (Atual:{' '}
             {conteudo.length})
@@ -56,6 +45,27 @@ export function PostPreview({
         )}
 
         <div className="flex justify-center bg-muted/30 rounded-xl p-4 sm:p-8 min-h-[500px] items-center border">
+          {network === 'genérico' && (
+            <Card className="w-full max-w-[400px] border shadow-md overflow-hidden rounded-xl bg-card">
+              <CardHeader className="p-4 flex flex-row items-center gap-3 border-b">
+                <Avatar className="h-10 w-10 border">
+                  <AvatarImage src={authorAvatar} />
+                  <AvatarFallback>{authorName[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="text-[15px] font-semibold leading-tight">{authorName}</p>
+                  <p className="text-xs text-muted-foreground">Visualização de Rascunho</p>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <img src={imageUrl} alt="preview" className="w-full object-cover max-h-[500px]" />
+                <div className="p-4 space-y-3">
+                  {conteudo && <p className="text-[14px] whitespace-pre-wrap">{conteudo}</p>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {network === 'facebook' && (
             <Card className="w-full max-w-[420px] border shadow-md overflow-hidden rounded-xl bg-card">
               <CardHeader className="p-4 flex flex-row items-center gap-3">
@@ -195,11 +205,11 @@ export function PostPreview({
     <div className="sticky top-6">
       <div className="bg-card border rounded-xl p-4 sm:p-6 shadow-sm">
         <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-          <Share2 className="h-5 w-5 text-primary" /> Preview do Post
+          <Share2 className="h-5 w-5 text-primary" /> Layout do Post
         </h3>
-        <Tabs defaultValue={redes[0]} className="w-full">
+        <Tabs defaultValue={activeRedes[0]} className="w-full">
           <TabsList className="w-full justify-start h-auto flex-wrap p-1 mb-6 bg-muted/50">
-            {redes.map((r) => (
+            {activeRedes.map((r) => (
               <TabsTrigger
                 key={r}
                 value={r}
@@ -209,7 +219,7 @@ export function PostPreview({
               </TabsTrigger>
             ))}
           </TabsList>
-          {redes.map((r) => (
+          {activeRedes.map((r) => (
             <TabsContent
               key={r}
               value={r}
