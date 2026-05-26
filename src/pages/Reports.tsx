@@ -8,12 +8,22 @@ import { fetchReportsData, ReportData } from '@/services/reports'
 import { getSponsoredMetrics, type SponsoredMetric } from '@/services/sponsored_metrics'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useParams } from 'react-router-dom'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
 import { useRealtime } from '@/hooks/use-realtime'
 import { ReportsSponsoredMetrics } from '@/components/reports/ReportsSponsoredMetrics'
 
 export default function Reports() {
+  const { type } = useParams<{ type: string }>()
   const { activeEmpresaId } = useEmpresaContext()
+
+  const siteNameMap: Record<string, string> = {
+    'social-ads': 'Social Ads',
+    'social-organico': 'Social Orgânico',
+    'google-ads': 'Google Ads',
+    blog: 'Blog',
+  }
+  const siteNameFilter = type ? siteNameMap[type] : undefined
   const [period, setPeriod] = useState('30')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -105,9 +115,16 @@ export default function Reports() {
         <>
           <ReportsMetrics data={data} />
           <ReportsCharts data={data} />
-          <ReportsSponsoredMetrics metrics={sponsoredMetrics} loading={loadingSponsored} />
           <ReportsTable data={data} />
         </>
+      )}
+
+      {(type ? siteNameFilter : true) && (
+        <ReportsSponsoredMetrics
+          metrics={sponsoredMetrics}
+          loading={loadingSponsored}
+          siteNameFilter={siteNameFilter}
+        />
       )}
     </div>
   )

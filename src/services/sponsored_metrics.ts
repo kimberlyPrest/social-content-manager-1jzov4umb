@@ -1,10 +1,12 @@
 import pb from '@/lib/pocketbase/client'
 
 export interface SponsoredMetricItem {
-  metric_name: string
-  value: number
+  metric_name?: string
+  label?: string
+  value: string | number
   trend: 'subindo' | 'descendo' | 'estável' | string
-  trend_percentage: number
+  trend_percentage?: string | number
+  percentage?: string | number
 }
 
 export interface SponsoredMetric {

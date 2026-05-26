@@ -46,6 +46,7 @@ const App = () => (
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/monitor" element={<Monitor />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/reports/:type" element={<Reports />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/activity" element={<ActivityPage />} />
                 <Route path="/team" element={<TeamPage />} />

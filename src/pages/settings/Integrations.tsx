@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { syncInstagramPosts } from '@/services/api'
 import { getSponsoredMetrics, SponsoredMetric } from '@/services/sponsored_metrics'
+import { MetricCard } from '@/components/reports/MetricCard'
 import {
   Dialog,
   DialogContent,
@@ -469,9 +470,9 @@ export default function Integrations() {
 
       <div className="mt-12 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Social Patrocinado</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Métricas Externas (Webhooks)</h2>
           <p className="text-muted-foreground">
-            Métricas de campanhas pagas sincronizadas via automações (Zapier/Make).
+            Sua aplicação atua como um recebedor passivo. Envie dados para o endpoint de webhooks.
           </p>
         </div>
 
@@ -484,7 +485,7 @@ export default function Integrations() {
         ) : sponsoredMetrics.length === 0 ? (
           <Alert className="bg-muted/50 border-none">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Nenhuma métrica de campanha patrocinada encontrada.</AlertDescription>
+            <AlertDescription>Nenhuma métrica externa recebida ainda.</AlertDescription>
           </Alert>
         ) : (
           <div className="space-y-8">
@@ -493,46 +494,7 @@ export default function Integrations() {
                 <h3 className="text-lg font-semibold border-b pb-2">{campaign.site_name}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {campaign.metrics.map((m, idx) => (
-                    <Card
-                      key={idx}
-                      className="shadow-subtle hover:shadow-elevation transition-all duration-300"
-                    >
-                      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                          {m.metric_name}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {m.metric_name.toLowerCase().includes('investimento') ||
-                          m.metric_name.toLowerCase().includes('cpc')
-                            ? new Intl.NumberFormat('pt-BR', {
-                                style: 'currency',
-                                currency: 'BRL',
-                              }).format(m.value)
-                            : new Intl.NumberFormat('pt-BR').format(m.value)}
-                        </div>
-                        <div className="flex items-center gap-1 mt-1 text-xs">
-                          {m.trend === 'subindo' ? (
-                            <span className="text-emerald-500 flex items-center font-medium">
-                              <ArrowUpRight className="w-3 h-3 mr-1" />
-                              {m.trend_percentage}%
-                            </span>
-                          ) : m.trend === 'descendo' ? (
-                            <span className="text-destructive flex items-center font-medium">
-                              <ArrowDownRight className="w-3 h-3 mr-1" />
-                              {m.trend_percentage}%
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground flex items-center font-medium">
-                              <Minus className="w-3 h-3 mr-1" />
-                              {m.trend_percentage}%
-                            </span>
-                          )}
-                          <span className="text-muted-foreground">vs último período</span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <MetricCard key={idx} metric={m} />
                   ))}
                 </div>
               </div>

@@ -10,6 +10,7 @@ import {
   Users,
   PenTool,
   Share2,
+  ChevronRight,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -21,7 +22,11 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarInset,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Header } from './Header'
 import { cn } from '@/lib/utils'
 import logoUrl from '@/assets/logo-supremo-aroma-e0694.png'
@@ -31,7 +36,19 @@ const navItems = [
   { title: 'Posts', icon: FileText, path: '/posts', color: '#EC4899' },
   { title: 'Criador', icon: PenTool, path: '/activity', color: '#A855F7' },
   { title: 'Monitoramento', icon: Activity, path: '/monitor', color: '#EF4444' },
-  { title: 'Relatórios', icon: PieChart, path: '/reports', color: '#10B981' },
+  {
+    title: 'Relatórios',
+    icon: PieChart,
+    path: '/reports',
+    color: '#10B981',
+    subItems: [
+      { title: 'Visão Geral', path: '/reports' },
+      { title: 'Social Ads', path: '/reports/social-ads' },
+      { title: 'Social Orgânico', path: '/reports/social-organico' },
+      { title: 'Google Ads', path: '/reports/google-ads' },
+      { title: 'Blog', path: '/reports/blog' },
+    ],
+  },
   { title: 'Testes A/B', icon: SplitSquareHorizontal, path: '/ab-tests', color: '#F97316' },
   { title: 'Integrações', icon: Share2, path: '/integracoes', color: '#06B6D4' },
   { title: 'Equipe', icon: Users, path: '/team', color: '#FBBF24' },
@@ -78,6 +95,60 @@ export default function Layout() {
                 (item.path !== '/' &&
                   item.path !== '/dashboard' &&
                   location.pathname.startsWith(item.path))
+
+              if (item.subItems) {
+                return (
+                  <Collapsible key={item.path} asChild defaultOpen={isActive}>
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          isActive={isActive}
+                          className={cn(
+                            'group transition-all duration-200 text-[#F3F4F6] hover:text-[#F3F4F6] mb-1 w-full',
+                            'h-11 group-data-[collapsible=icon]:!size-11 [&>svg]:!size-6 hover:bg-[var(--hover-bg)]',
+                            isActive ? 'bg-[var(--hover-bg)] font-semibold' : 'bg-transparent',
+                          )}
+                          style={
+                            {
+                              '--item-color': item.color,
+                              '--hover-bg': `${item.color}1A`,
+                            } as React.CSSProperties
+                          }
+                        >
+                          <item.icon
+                            className={cn(
+                              'h-6 w-6 shrink-0 transition-all duration-200 group-hover:brightness-[1.25] group-hover:opacity-100',
+                              isActive ? 'brightness-[1.25] opacity-100' : 'opacity-80',
+                            )}
+                            style={{ color: 'var(--item-color)' }}
+                          />
+                          <span className="text-base truncate group-data-[collapsible=icon]:hidden flex-1 text-left">
+                            {item.title}
+                          </span>
+                          <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub className="group-data-[collapsible=icon]:hidden">
+                          {item.subItems.map((sub) => (
+                            <SidebarMenuSubItem key={sub.path}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={location.pathname === sub.path}
+                                className="text-slate-300 hover:text-white hover:bg-white/5"
+                              >
+                                <Link to={sub.path}>{sub.title}</Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )
+              }
+
               return (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
@@ -104,7 +175,7 @@ export default function Layout() {
                         )}
                         style={{ color: 'var(--item-color)' }}
                       />
-                      <span className="text-base truncate group-data-[collapsible=icon]:hidden">
+                      <span className="text-base truncate group-data-[collapsible=icon]:hidden flex-1 text-left">
                         {item.title}
                       </span>
                     </Link>
