@@ -49,6 +49,8 @@ import {
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { getDashboardData, syncMetrics, deletePost } from '@/services/api'
+import { getSponsoredMetrics, type SponsoredMetric } from '@/services/sponsored_metrics'
+import { cn } from '@/lib/utils'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/hooks/use-auth'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
@@ -69,6 +71,7 @@ export default function Index() {
   const [syncing, setSyncing] = useState(false)
   const [days, setDays] = useState('7')
   const [data, setData] = useState<any>(null)
+  const [sponsoredMetrics, setSponsoredMetrics] = useState<SponsoredMetric[]>([])
   const { toast } = useToast()
 
   const notifiedPosts = useRef(new Set<string>())
@@ -86,15 +89,27 @@ export default function Index() {
     }
   }
 
+  const loadSponsoredData = async () => {
+    if (!activeEmpresaId) return
+    try {
+      const res = await getSponsoredMetrics()
+      setSponsoredMetrics(res)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
     if (activeEmpresaId) {
       setLoading(true)
       loadData()
+      loadSponsoredData()
     }
   }, [days, activeEmpresaId])
 
   useRealtime('metrics_posts', () => loadData())
   useRealtime('posts', () => loadData())
+  useRealtime('sponsored_metrics', () => loadSponsoredData())
 
   useEffect(() => {
     if (!data || !data.metrics) return
@@ -341,7 +356,78 @@ export default function Index() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="space-y-4 mt-8">
+        <h3 className="text-xl font-bold tracking-tight">Social Patrocinado</h3>
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : sponsoredMetrics.length === 0 ? (
+          <Card className="border-dashed shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+              <p className="text-muted-foreground mb-4">
+                Nenhuma métrica de social patrocinado disponível.
+              </p>
+              <Button variant="outline" asChild>
+                <Link to="/integracoes">Conectar uma Play</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {sponsoredMetrics.map((site) => (
+              <Card key={site.id} className="border-none shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center justify-between">
+                    {site.site_name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {site.metrics.map((metric, idx) => (
+                    <div key={idx} className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{metric.metric_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">
+                          {metric.metric_name.toLowerCase().includes('investimento')
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(metric.value)
+                            : metric.value.toLocaleString('pt-BR')}
+                        </span>
+                        {metric.trend && metric.trend !== 'estável' && (
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              'text-[10px] px-1.5 py-0 hover:bg-transparent font-medium border-none',
+                              metric.trend === 'subindo'
+                                ? 'text-green-700 bg-green-100'
+                                : 'text-red-700 bg-red-100',
+                            )}
+                          >
+                            {metric.trend === 'subindo' ? '↑' : '↓'} {metric.trend_percentage}%
+                          </Badge>
+                        )}
+                        {metric.trend === 'estável' && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] px-1.5 py-0 text-slate-600 bg-slate-100 hover:bg-transparent font-medium border-none"
+                          >
+                            - {metric.trend_percentage}%
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3 mt-8">
         <Card className="md:col-span-2 border-none shadow-sm overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Postagens Recentes</CardTitle>
