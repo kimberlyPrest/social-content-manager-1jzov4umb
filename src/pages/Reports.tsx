@@ -5,9 +5,12 @@ import { ReportsMetrics } from '@/components/reports/ReportsMetrics'
 import { ReportsCharts } from '@/components/reports/ReportsCharts'
 import { ReportsTable } from '@/components/reports/ReportsTable'
 import { fetchReportsData, ReportData } from '@/services/reports'
+import { getSponsoredMetrics, type SponsoredMetric } from '@/services/sponsored_metrics'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
+import { useRealtime } from '@/hooks/use-realtime'
+import { ReportsSponsoredMetrics } from '@/components/reports/ReportsSponsoredMetrics'
 
 export default function Reports() {
   const { activeEmpresaId } = useEmpresaContext()
@@ -17,6 +20,27 @@ export default function Reports() {
   const [networks, setNetworks] = useState(['facebook', 'instagram', 'linkedin', 'tiktok', 'blog'])
   const [data, setData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
+  const [sponsoredMetrics, setSponsoredMetrics] = useState<SponsoredMetric[]>([])
+  const [loadingSponsored, setLoadingSponsored] = useState(true)
+
+  const loadSponsoredData = async () => {
+    if (!activeEmpresaId) return
+    setLoadingSponsored(true)
+    try {
+      const res = await getSponsoredMetrics()
+      setSponsoredMetrics(res)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingSponsored(false)
+    }
+  }
+
+  useEffect(() => {
+    loadSponsoredData()
+  }, [activeEmpresaId])
+
+  useRealtime('sponsored_metrics', () => loadSponsoredData())
 
   useEffect(() => {
     if (!activeEmpresaId) return
@@ -81,6 +105,7 @@ export default function Reports() {
         <>
           <ReportsMetrics data={data} />
           <ReportsCharts data={data} />
+          <ReportsSponsoredMetrics metrics={sponsoredMetrics} loading={loadingSponsored} />
           <ReportsTable data={data} />
         </>
       )}

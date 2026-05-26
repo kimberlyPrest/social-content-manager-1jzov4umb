@@ -366,11 +366,9 @@ export default function Index() {
         ) : sponsoredMetrics.length === 0 ? (
           <Card className="border-dashed shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-              <p className="text-muted-foreground mb-4">
-                Nenhuma métrica de social patrocinado disponível.
-              </p>
+              <p className="text-muted-foreground mb-4">Sem dados de tráfego pago</p>
               <Button variant="outline" asChild>
-                <Link to="/integracoes">Conectar uma Play</Link>
+                <Link to="/integracoes">Configurar Integração</Link>
               </Button>
             </CardContent>
           </Card>
@@ -389,12 +387,15 @@ export default function Index() {
                       <span className="text-sm text-muted-foreground">{metric.metric_name}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">
-                          {metric.metric_name.toLowerCase().includes('investimento')
+                          {metric.metric_name.toLowerCase().includes('lucro') ||
+                          metric.metric_name.toLowerCase().includes('investimento')
                             ? new Intl.NumberFormat('pt-BR', {
                                 style: 'currency',
                                 currency: 'BRL',
                               }).format(metric.value)
-                            : metric.value.toLocaleString('pt-BR')}
+                            : metric.metric_name.toLowerCase().includes('roas')
+                              ? `${metric.value}x`
+                              : metric.value.toLocaleString('pt-BR')}
                         </span>
                         {metric.trend && metric.trend !== 'estável' && (
                           <Badge
@@ -406,7 +407,7 @@ export default function Index() {
                                 : 'text-red-700 bg-red-100',
                             )}
                           >
-                            {metric.trend === 'subindo' ? '↑' : '↓'} {metric.trend_percentage}%
+                            {metric.trend === 'subindo' ? '📈' : '📉'} {metric.trend_percentage}%
                           </Badge>
                         )}
                         {metric.trend === 'estável' && (
