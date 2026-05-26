@@ -1,7 +1,11 @@
 import pb from '@/lib/pocketbase/client'
 
-export const getAITitles = async () => {
-  return pb.send('/backend/v1/ai/titles', { method: 'GET' })
+export const getAITitles = async (theme: string) => {
+  return pb.send('/backend/v1/ai/generate-titles', {
+    method: 'POST',
+    body: JSON.stringify({ theme }),
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 export const generateAICampaign = async (
@@ -9,7 +13,7 @@ export const generateAICampaign = async (
   networks: string[],
   bestDays: number[],
 ) => {
-  return pb.send('/backend/v1/ai/campaign', {
+  return pb.send('/backend/v1/ai/generate-campaign', {
     method: 'POST',
     body: JSON.stringify({ titles, networks, bestDays }),
     headers: { 'Content-Type': 'application/json' },

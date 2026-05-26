@@ -14,7 +14,7 @@ export default function Reports() {
   const [period, setPeriod] = useState('30')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
-  const [networks, setNetworks] = useState(['facebook', 'instagram', 'linkedin', 'tiktok'])
+  const [networks, setNetworks] = useState(['facebook', 'instagram', 'linkedin', 'tiktok', 'blog'])
   const [data, setData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
 

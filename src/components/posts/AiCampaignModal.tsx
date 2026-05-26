@@ -8,10 +8,13 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2, Sparkles, Send } from 'lucide-react'
 import { getAITitles, generateAICampaign, getBestPostingDays } from '@/services/api'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const DAYS_OF_WEEK = [
   'Domingo',
@@ -35,6 +38,7 @@ export function AiCampaignModal({
   onSuccess: () => void
 }) {
   const { activeEmpresaId } = useEmpresaContext()
+  const [theme, setTheme] = useState('')
   const [titles, setTitles] = useState<string[]>([])
   const [selectedTitles, setSelectedTitles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -44,23 +48,34 @@ export function AiCampaignModal({
 
   useEffect(() => {
     if (isOpen) {
-      loadData()
-    } else {
+      setTheme('')
+      setTitles([])
       setSelectedTitles([])
+      loadBestDays()
     }
   }, [isOpen, activeEmpresaId])
 
-  const loadData = async () => {
-    setLoading(true)
+  const loadBestDays = async () => {
     try {
-      const [titlesRes, days] = await Promise.all([
-        getAITitles(),
-        getBestPostingDays(activeEmpresaId),
-      ])
-      setTitles(titlesRes.titles)
+      const days = await getBestPostingDays(activeEmpresaId)
       setBestDays(days)
     } catch (err) {
-      toast.error('Erro ao carregar dados da IA.')
+      console.error(err)
+    }
+  }
+
+  const handleGenerateTitles = async () => {
+    if (!theme) {
+      toast.error('Por favor, informe um tema.')
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await getAITitles(theme)
+      setTitles(res.titles || [])
+      setSelectedTitles([])
+    } catch (err) {
+      toast.error('Erro ao gerar títulos da IA.')
     } finally {
       setLoading(false)
     }
@@ -95,25 +110,47 @@ export function AiCampaignModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-600" />
             Assistente de Campanha Inteligente
           </DialogTitle>
           <DialogDescription>
-            Escolha 2 títulos abaixo. A IA irá gerar os artigos de blog otimizados para SEO e
-            automaticamente criar e agendar 2 posts derivados para cada rede social sua.
+            Insira um tema para receber sugestões de títulos otimizados para SEO. A IA gerará os
+            artigos de blog e agendará 2 posts derivados para cada rede social conectada.
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <div className="space-y-6 mt-4">
+          <div className="space-y-3">
+            <Label htmlFor="theme">Tema Principal</Label>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <Input
+                id="theme"
+                placeholder="Ex: Benefícios do Café Especial"
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerateTitles()}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleGenerateTitles}
+                disabled={loading || !theme}
+                className="w-full sm:w-auto"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                Gerar Títulos
+              </Button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-6 mt-4">
-            <div className="space-y-3">
+
+          {titles.length > 0 && (
+            <div className="space-y-3 animate-fade-in">
               <h4 className="font-medium text-sm text-slate-700">
                 Títulos Sugeridos (Selecione 2)
               </h4>
@@ -124,11 +161,13 @@ export function AiCampaignModal({
                   return (
                     <div
                       key={i}
-                      className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
+                      className={cn(
+                        'flex items-start space-x-3 p-3 rounded-lg border transition-colors',
                         isSelected
                           ? 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 cursor-pointer'
-                          : 'hover:bg-slate-50 cursor-pointer'
-                      } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          : 'hover:bg-slate-50 cursor-pointer',
+                        isDisabled && 'opacity-50 cursor-not-allowed',
+                      )}
                       onClick={() => !isDisabled && handleToggleTitle(title)}
                     >
                       <Checkbox
@@ -139,7 +178,10 @@ export function AiCampaignModal({
                       />
                       <label
                         htmlFor={`title-${i}`}
-                        className={`text-sm font-medium leading-tight ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        className={cn(
+                          'text-sm font-medium leading-tight',
+                          isDisabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                        )}
                       >
                         {title}
                       </label>
@@ -148,8 +190,10 @@ export function AiCampaignModal({
                 })}
               </div>
             </div>
+          )}
 
-            <div className="bg-slate-50 p-4 rounded-lg border space-y-2">
+          {titles.length > 0 && (
+            <div className="bg-slate-50 p-4 rounded-lg border space-y-2 animate-fade-in">
               <h4 className="font-medium text-sm text-slate-700">Estratégia de Distribuição</h4>
               <p className="text-xs text-slate-500">
                 Analisamos o histórico da sua empresa. Os melhores dias para postagem parecem ser{' '}
@@ -170,30 +214,30 @@ export function AiCampaignModal({
               </div>
               <p className="text-xs text-slate-500 mt-1">
                 Os posts derivados para as redes sociais (
-                {connectedNetworks.join(', ') || 'Nenhuma conectada'}) serão agendados
-                automaticamente nos dias subsequentes.
+                {connectedNetworks.length > 0 ? connectedNetworks.join(', ') : 'Nenhuma conectada'})
+                serão agendados automaticamente nos dias subsequentes.
               </p>
             </div>
+          )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={onClose} disabled={generating}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={selectedTitles.length !== 2 || generating}
-                className="bg-purple-700 hover:bg-purple-800 text-white gap-2"
-              >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Gerar e Agendar
-              </Button>
-            </div>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={onClose} disabled={generating}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={selectedTitles.length !== 2 || generating}
+              className="bg-purple-700 hover:bg-purple-800 text-white gap-2"
+            >
+              {generating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Gerar e Agendar
+            </Button>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   )

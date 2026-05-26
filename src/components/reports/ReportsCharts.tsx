@@ -49,7 +49,20 @@ export function ReportsCharts({ data }: { data: ReportData[] }) {
     instagram: '#E4405F',
     linkedin: '#0A66C2',
     tiktok: '#000000',
+    blog: '#8b5cf6', // purple-500
   }
+
+  const blogVsSocial = data.reduce(
+    (acc, d) => {
+      const type = d.rede === 'blog' || d.isBlog ? 'Blog' : 'Redes Sociais'
+      if (!acc[type]) acc[type] = { type, alcance: 0, engajamento: 0 }
+      acc[type].alcance += d.alcance
+      acc[type].engajamento += d.curtidas + d.comentarios + d.compartilhamentos
+      return acc
+    },
+    {} as Record<string, any>,
+  )
+  const blogVsSocialData = Object.values(blogVsSocial)
   const networkData = Object.entries(networkMap).map(([net, count]) => ({
     network: net,
     count,
@@ -171,6 +184,31 @@ export function ReportsCharts({ data }: { data: ReportData[] }) {
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Bar>
+            </BarChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card className="break-inside-avoid lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Blog vs Redes Sociais</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            config={{
+              alcance: { label: 'Alcance', color: '#a855f7' },
+              engajamento: { label: 'Engajamento', color: '#3b82f6' },
+            }}
+            className="h-[300px] w-full"
+          >
+            <BarChart data={blogVsSocialData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="type" tickLine={false} axisLine={false} tickMargin={8} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="alcance" fill="var(--color-alcance)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="engajamento" fill="var(--color-engajamento)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ChartContainer>
         </CardContent>

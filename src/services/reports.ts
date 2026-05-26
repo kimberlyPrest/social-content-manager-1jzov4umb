@@ -12,6 +12,7 @@ export interface ReportData {
   compartilhamentos: number
   alcance: number
   isAutomated?: boolean
+  isBlog?: boolean
 }
 
 export async function fetchReportsData(
@@ -41,11 +42,13 @@ export async function fetchReportsData(
 
     data = metrics.map((m) => {
       let isAutomated = false
+      let isBlog = false
       const tagsList = m.expand?.post_id?.tags_list
       if (tagsList) {
         try {
           const tags = Array.isArray(tagsList) ? tagsList : JSON.parse(tagsList)
           isAutomated = tags.includes('Automated')
+          isBlog = tags.includes('Blog')
         } catch {
           /* intentionally ignored */
         }
@@ -61,6 +64,7 @@ export async function fetchReportsData(
         compartilhamentos: m.compartilhamentos || 0,
         alcance: m.alcance || 0,
         isAutomated,
+        isBlog,
       }
     })
   } catch (err) {
@@ -70,7 +74,9 @@ export async function fetchReportsData(
   return data.filter((d) => {
     const itemDate = new Date(d.data)
     const inDate = itemDate >= startDate && itemDate <= endDate
-    const inNetwork = networks.includes(d.rede.toLowerCase())
+    const inNetwork =
+      networks.includes(d.rede.toLowerCase()) ||
+      (networks.includes('blog') && (d.rede.toLowerCase() === 'blog' || d.isBlog))
     return inDate && inNetwork
   })
 }
