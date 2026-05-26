@@ -125,12 +125,21 @@ export function ReportsTable({ data }: { data: ReportData[] }) {
               return (
                 <TableRow key={d.id}>
                   <TableCell className="font-medium max-w-[200px] truncate">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="truncate block cursor-help">{d.titulo}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>{d.titulo}</TooltipContent>
-                    </Tooltip>
+                    <div className="flex flex-col gap-1 items-start">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="truncate block cursor-help w-full text-left">
+                            {d.titulo}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{d.titulo}</TooltipContent>
+                      </Tooltip>
+                      {d.isAutomated && (
+                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-800">
+                          Campanha IA
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="capitalize">{d.rede}</TableCell>
                   <TableCell>{format(parseISO(d.data.split('T')[0]), 'dd/MM/yyyy')}</TableCell>

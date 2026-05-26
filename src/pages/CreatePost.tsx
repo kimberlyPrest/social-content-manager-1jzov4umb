@@ -4,10 +4,11 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud } from 'lucide-react'
+import { Loader2, ArrowLeft, ImagePlus, X, UploadCloud, Sparkles } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useEmpresaContext } from '@/hooks/use-empresa-context'
 import { createPostWithFiles, getPost, updatePostWithFiles } from '@/services/api'
+import { AiCampaignModal } from '@/components/posts/AiCampaignModal'
 import { getIntegracoes } from '@/services/integracao_redes'
 import pb from '@/lib/pocketbase/client'
 import { SocialPreviews } from '@/components/SocialPreviews'
@@ -70,6 +71,7 @@ export default function CreatePost() {
   const [submitAction, setSubmitAction] = useState<'draft' | 'publish'>('draft')
   const [loadingPost, setLoadingPost] = useState(isEditMode)
   const [connectedNetworks, setConnectedNetworks] = useState<string[]>([])
+  const [showAiModal, setShowAiModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -277,8 +279,19 @@ export default function CreatePost() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-purple-950 dark:text-purple-100">
+            <h2 className="text-3xl font-bold tracking-tight text-purple-950 dark:text-purple-100 flex items-center gap-3">
               {isEditMode ? 'Editar Post' : 'Criar Post'}
+              {!isEditMode && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  onClick={() => setShowAiModal(true)}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Campanha com IA
+                </Button>
+              )}
             </h2>
             <p className="text-muted-foreground">
               {isEditMode
@@ -575,6 +588,13 @@ export default function CreatePost() {
             </form>
           </Form>
         </div>
+
+        <AiCampaignModal
+          isOpen={showAiModal}
+          onClose={() => setShowAiModal(false)}
+          connectedNetworks={connectedNetworks}
+          onSuccess={() => navigate('/posts')}
+        />
 
         {/* Right Column: Preview */}
         <div className="lg:col-span-5 sticky top-6 h-[calc(100vh-6rem)]">

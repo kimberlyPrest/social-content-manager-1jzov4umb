@@ -1,5 +1,48 @@
 import pb from '@/lib/pocketbase/client'
 
+export const getAITitles = async () => {
+  return pb.send('/backend/v1/ai/titles', { method: 'GET' })
+}
+
+export const generateAICampaign = async (
+  titles: string[],
+  networks: string[],
+  bestDays: number[],
+) => {
+  return pb.send('/backend/v1/ai/campaign', {
+    method: 'POST',
+    body: JSON.stringify({ titles, networks, bestDays }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+export const getBestPostingDays = async (empresaId?: string) => {
+  try {
+    const filter = empresaId ? `post_id.empresa_id = "${empresaId}"` : ''
+    const metrics = await pb.collection('metrics_posts').getFullList({ filter, expand: 'post_id' })
+
+    const dayScores = [0, 0, 0, 0, 0, 0, 0] // 0 = Sunday, 1 = Monday, ...
+    metrics.forEach((m) => {
+      const post = m.expand?.post_id as any
+      const dateStr = post?.publicado_em || m.updated
+      if (dateStr) {
+        const d = new Date(dateStr).getDay()
+        dayScores[d] += (m.curtidas || 0) + (m.comentarios || 0) + (m.compartilhamentos || 0)
+      }
+    })
+
+    const sortedDays = dayScores
+      .map((score, index) => ({ score, index }))
+      .sort((a, b) => b.score - a.score)
+    if (sortedDays[0].score > 0) {
+      return [sortedDays[0].index, sortedDays[1].index]
+    }
+  } catch (e) {
+    console.error('Error calculating best days', e)
+  }
+  return [1, 4] // Default: Monday, Thursday
+}
+
 export const syncMetrics = async () => {
   return pb.send('/backend/v1/metrics/sync', { method: 'POST' })
 }

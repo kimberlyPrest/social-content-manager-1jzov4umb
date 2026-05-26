@@ -11,6 +11,7 @@ export interface ReportData {
   comentarios: number
   compartilhamentos: number
   alcance: number
+  isAutomated?: boolean
 }
 
 export async function fetchReportsData(
@@ -38,17 +39,30 @@ export async function fetchReportsData(
       expand: 'post_id',
     })
 
-    data = metrics.map((m) => ({
-      id: m.id,
-      post_id: m.post_id,
-      titulo: m.expand?.post_id?.titulo || 'Post sem título',
-      rede: (m.rede_social || 'facebook').toLowerCase(),
-      data: m.updated,
-      curtidas: m.curtidas || 0,
-      comentarios: m.comentarios || 0,
-      compartilhamentos: m.compartilhamentos || 0,
-      alcance: m.alcance || 0,
-    }))
+    data = metrics.map((m) => {
+      let isAutomated = false
+      const tagsList = m.expand?.post_id?.tags_list
+      if (tagsList) {
+        try {
+          const tags = Array.isArray(tagsList) ? tagsList : JSON.parse(tagsList)
+          isAutomated = tags.includes('Automated')
+        } catch {
+          /* intentionally ignored */
+        }
+      }
+      return {
+        id: m.id,
+        post_id: m.post_id,
+        titulo: m.expand?.post_id?.titulo || 'Post sem título',
+        rede: (m.rede_social || 'facebook').toLowerCase(),
+        data: m.updated,
+        curtidas: m.curtidas || 0,
+        comentarios: m.comentarios || 0,
+        compartilhamentos: m.compartilhamentos || 0,
+        alcance: m.alcance || 0,
+        isAutomated,
+      }
+    })
   } catch (err) {
     console.warn('Failed to fetch reports data', err)
   }
